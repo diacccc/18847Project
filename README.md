@@ -2,19 +2,19 @@
 
 ## Key Points
 
-1. Implementation for different types of data, for example, `double` , `float`, `complex` , and low-level integer. (generic programming)
+1. Implementation for different types of data, for example, `double` , `float`, `complex` , and low-level integer. (generic programming) OpenMP -> TBB
 
 2. Benchmark - GEMM or other? Or choose one problem using matrix multiplication, compare the performance using our implementation and its original implementation. 
 
-3. **Single CPU - SIMD Extension includes *SSE, AVX2, AVX512*.**
+3. **Single CPU - SIMD Extension includes *SSE, AVX2, AVX512*.** Intrinsics 
 
-   Multiple CPU - TBD (OpenMP?)
+   Multiple CPU - TBD (OpenMP?) pthread
 
-   **GPU - CUDA** 
+   **GPU - CUDA** / Metal 
 
 4. Write assembly code on different chips such as Intel, AMD. (If required to compare with IntelMKL) 
 
-   IntelMKL is the best software for dgemm on Intel chip. For AMD, BLAS? (BLAS is worse than IntelMKL)
+   IntelMKL is the best software for dgemm on Intel chip. For AMD, BLAS? (BLAS is worse than IntelMKL) 
 
 5. Visualization for the algorithm process, and performance results.
 
@@ -24,12 +24,18 @@ If the format allows, start your proposal with a short summary, designed to conv
 
 ## Deliverables - Diac Liu
 
-Include a brief, clear work breakdown structure with milestones and deadlines. Make sure to label deliverables as optional or required. You may want your plan to start by producing some kind of white paper, or planning the project in traditional Software Engineering style. It’s OK to include thinking time (“investigation”) in your work schedule. Deliverables should include investigation, coding and documentation.
+| Feature           | Details                                                      | Resources                                                    | Estimated Time | Assignee |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | -------------- | -------- |
+| Generic Library   | Templated C++ GEMM implementation<br />1. double / float (Required)<br />2. Low-level float point f8e4m3 f8e5m2 (Optional)<br />3. Unit tests (Required) |                                                              | 4 hours        |          |
+| Single CPU (SIMD) | 1. AVX2 (Required)<br />2. AVX512 (Required)                 | https://github.com/flame/how-to-optimize-gemm<br />https://www.cs.utexas.edu/~flame/pubs/GotoTOMS_final.pdf<br />https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html | -              |          |
+| Multi-core        | 1. OpenMP (Linux) <br />2. TBB (MacOS)                       | https://www.cs.utexas.edu/~flame/pubs/blis3_ipdps14.pdf<br />https://www.openmp.org/ | -              |          |
+| GPU               | 1. CUDA (Required)<br />2. Metal (MacOS)<br />3. OpenCL<br />4. Triton | https://zhuanlan.zhihu.com/p/435908830                       | -              |          |
+| Benchmark         | Configure environment for <br />1. BLAS<br />2. Intel MKL    |                                                              | 2 hours        |          |
+| Visualization     | Performance Analysis                                         |                                                              | 2 hours        |          |
 
 ## Related Work - Min Xiao
 
 You should understand and communicate other people’s work that may be related to your own. Do your research, and make sure you understand how the project you are proposing fits into the target organization. Be sure to explain how the proposed work is different from similar related work.
 
 ## High-level Code Structure - Diac Liu
-
 

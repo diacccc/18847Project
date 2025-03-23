@@ -20,7 +20,7 @@
 
  ## Synopsis - Jiayu Wang
 
-If the format allows, start your proposal with a short summary, designed to convince the reviewer to read the rest of the proposal.
+This project aims to optimize the performance of General Matrix Multiplication (GEMM) by implementing SIMD (Single Instruction, Multiple Data) and multithreading on CPUs, as well as utilizing CUDA/METAL on GPUs. The main objectives are to enhance computational efficiency, reduce execution time, and achieve near-optimal performance. The methodology includes leveraging SIMD instructions and multithreading techniques on CPUs, and implementing CUDA/METAL kernels on GPUs. Expected outcomes include significant performance improvements in GEMM operations, validated through benchmarking and performance analysis by comparing the result with existing BLAS and Intel MKL benchmark. This project is to address critical performance bottlenecks in numerical computing and scientific applications, potentially benefiting a wide range of computational tasks。
 
 ## Deliverables - Diac Liu
 

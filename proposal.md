@@ -35,7 +35,31 @@ This project aims to optimize the performance of General Matrix Multiplication (
 
 ## Related Work - Min Xiao
 
-You should understand and communicate other people’s work that may be related to your own. Do your research, and make sure you understand how the project you are proposing fits into the target organization. Be sure to explain how the proposed work is different from similar related work.
+### **Optimizing GEMM on CPU and GPU Architectures**
+
+Optimizing General Matrix Multiplication (GEMM) requires tailored strategies for different hardware:
+
+#### **1. Single-CPU Optimization (SIMD: SSE, AVX2, AVX512)**
+- **Intel’s Optimization Manual** provides guidelines for SIMD programming (SSE/AVX2/AVX512), covering floating-point optimizations and memory alignment.
+- **AVX512-Specific Challenges**: Wider registers (e.g., 512-bit) introduce memory bandwidth bottlenecks. Tutorials like *Optimizing DGEMM with AVX512F* address these issues through cache-aware blocking and instruction scheduling.
+- **Eigen Library**: Implements AVX512-optimized GEMM kernels, offering insights into practical trade-offs (e.g., register pressure vs. parallelism).
+
+#### **2. Multi-CPU Parallelization (OpenMP)**
+- **Blocking + OpenMP**: Combining tiling techniques with OpenMP (e.g., `#pragma omp parallel for`) improves multi-core scaling. Discussions on platforms like Stack Overflow highlight empirical tuning for thread scheduling (static/dynamic).
+- **BLIS**: A research introducing BLIS a new framework for rapid instantiation of the BLAS. It refines the GotoBLAS approach by exposing two additional loops around the inner kernel, enabling finer-grained parallelism.
+  - ***micro-kernel***: Optimize the micro-kernel (a small, architecture-specific GEMM unit) for registers, simplifying porting across CPUs/GPUs.
+  - ***Parallelism in shared caches***: Parallelizes five nested loops around the micro-kernel, targeting different memory hierarchies (L1/L2/L3 caches). 
+  - ***Xeon Phi***: Uses hyperthreading and L2-cache blocking to mitigate bandwidth bottlenecks. Performance achieves matching Intel MKL.
+
+#### **3. GPU Acceleration (CUDA/Metal)**
+- **CUDA Optimization**: Key techniques include shared memory tiling, warp-level parallelism, and occupancy tuning.
+- **Batched GEMM**: GPU-specific optimizations (e.g., kernel fusion) are explored in papers like *Performance, Design, and Autotuning of Batched GEMM for GPUs*.
+- **Metal for Apple GPUs**: Leverages Apple’s Metal Performance Shaders (MPS) for GEMM, however, it's less extensive than CUDA.
+
+#### **4. Reference**
+- [1] T. M. Smith, R. v. d. Geijn, M. Smelyanskiy, J. R. Hammond and F. G. V. Zee, "Anatomy of High-Performance Many-Threaded Matrix Multiplication," 
+- [2] Abdelfattah, A., Haidar, A., Tomov, S., Dongarra, J. (2016). Performance, Design, and Autotuning of Batched GEMM for GPUs. In: Kunkel, J., Balaji, P., Dongarra, J. (eds) High Performance Computing. ISC High Performance 2016. Lecture Notes in Computer Science(), vol 9697. Springer, Cham. https://doi.org/10.1007/978-3-319-41321-1_2
+
 
 ## High-level Code Structure - Diac Liu
 

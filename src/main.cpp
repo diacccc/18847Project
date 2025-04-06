@@ -14,7 +14,8 @@ int main(int argc, char** argv) {
     
     // Setup benchmark
     GemmBenchmark benchmark;
-    benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation("cpu_naive")));
+    //benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation("cpu_naive")));
+    benchmark.addAllImplementations();
     
     // Set matrix sizes
     std::vector<std::tuple<size_t, size_t, size_t>> matrix_sizes;

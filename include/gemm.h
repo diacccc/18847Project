@@ -31,7 +31,7 @@ public:
 };
 
 // Forward declarations of implementation classes
-class NaiveCpuGemm : public GemmImplementation {
+class GemmNaive : public GemmImplementation {
 public:
     std::string getName() const override { return "cpu_naive"; }
     
@@ -44,5 +44,16 @@ public:
     ) override;
 };
 
-
+class GemmAVX : public GemmImplementation {
+    public:
+        std::string getName() const override { return "cpu_avx"; }
+        
+        void execute(
+            float alpha,
+            const Matrix<float>& A,
+            const Matrix<float>& B,
+            float beta,
+            Matrix<float>& C
+        ) override;
+    };
 } // namespace gemm

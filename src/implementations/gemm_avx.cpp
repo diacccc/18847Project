@@ -5,7 +5,7 @@
 namespace gemm {
 
 // Implementation of NaiveCpuGemm::execute
-void GemmNaive::execute(
+void GemmAVX::execute(
     float alpha,
     const Matrix<float>& A,
     const Matrix<float>& B,
@@ -43,4 +43,4 @@ void GemmNaive::execute(
     }
 }
 
-} // namespace gemm
+}

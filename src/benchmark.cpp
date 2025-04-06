@@ -27,7 +27,7 @@ void GemmBenchmark::addAllImplementations() {
     // Get all registered implementations
     // We'll create each one and add it
     std::vector<std::string> impl_names = {
-        "cpu_naive", 
+        "cpu_naive", "cpu_avx"
         //"cpu_openblas",
         // "gpu_naive", "gpu_cutlass"
         // Add your custom implementations here
@@ -227,7 +227,10 @@ GemmImplementation* createImplementation(const std::string& name) {
 void registerImplementations() {
     // Register CPU naive implementation
     registerImplementation("cpu_naive", []() -> GemmImplementation* {
-        return new NaiveCpuGemm();
+        return new GemmNaive();
+    });
+    registerImplementation("cpu_avx", []() -> GemmImplementation* {
+        return new GemmAVX();
     });
     
     // Add more implementations here as they are developed

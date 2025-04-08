@@ -1,5 +1,7 @@
 #include "benchmark.h"
 #include "gemm.h"
+#include "gemm_naive.h"
+#include "gemm_avx.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -72,11 +74,11 @@ std::vector<BenchmarkResult> GemmBenchmark::runAll() {
         std::tie(M, N, K) = size;
         
         std::cout << "Benchmarking matrix size: " << M << "x" << N << "x" << K << std::endl;
-        
+        const size_t LD = 2000;
         // Create matrices for this benchmark
-        Matrix<float> A(M, K);
-        Matrix<float> B(K, N);
-        Matrix<float> C(M, N);
+        Matrix<float> A(M, K, LD);
+        Matrix<float> B(K, N, LD);
+        Matrix<float> C(M, N, LD);
         
         // Initialize matrices with random values
         A.randomize(-1.0f, 1.0f);

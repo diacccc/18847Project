@@ -87,7 +87,7 @@ private:
 inline void printBenchmarkResults(const std::vector<BenchmarkResult>& results) {
     // Print header
     std::cout << std::setw(20) << "Implementation" << " | "
-              << std::setw(5) << "Type" << " | "
+            //   << std::setw(5) << "Type" << " | "
               << std::setw(6) << "M" << " | "
               << std::setw(6) << "N" << " | "
               << std::setw(6) << "K" << " | "

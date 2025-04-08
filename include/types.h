@@ -20,7 +20,7 @@ private:
 public:
     // Constructor for a rows x cols matrix
     Matrix(size_t rows, size_t cols) 
-        : rows_(rows), cols_(cols), ld_(cols), data_(rows * cols) {}
+        : rows_(rows), cols_(cols), ld_(rows), data_(rows * cols) {}
     
     // Constructor with leading dimension (useful for aligned memory)
     Matrix(size_t rows, size_t cols, size_t ld) 
@@ -57,13 +57,13 @@ public:
     // Access element at (row, col)
     T& at(size_t row, size_t col) {
         assert(row < rows_ && col < cols_ && "Matrix indices out of bounds");
-        return data_[row * ld_ + col];
+        return data_[row + col * ld_ ];
     }
     
     // Access element at (row, col) (const version)
     const T& at(size_t row, size_t col) const {
         assert(row < rows_ && col < cols_ && "Matrix indices out of bounds");
-        return data_[row * ld_ + col];
+        return data_[row + col * ld_];
     }
     
     // Get raw data pointer
@@ -101,6 +101,7 @@ public:
         for (size_t i = 0; i < rows_; ++i) {
             for (size_t j = 0; j < cols_; ++j) {
                 if (std::abs(at(i, j) - other.at(i, j)) > tolerance) {
+                    std::cerr << "(" << i << ", " << j << ")\t" <<  at(i, j) << " " << other.at(i, j) << std::endl;
                     return false;
                 }
             }

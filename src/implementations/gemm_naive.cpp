@@ -1,4 +1,4 @@
-#include "gemm.h"
+#include "gemm_naive.h"
 #include <unordered_map>
 #include <functional>
 
@@ -16,22 +16,13 @@ void GemmNaive::execute(
     const size_t N = B.cols();
     const size_t K = A.cols();
     
-    // Check dimensions
-    if (B.rows() != K || C.rows() != M || C.cols() != N) {
-        std::cerr << "Error: Matrix dimensions don't match for GEMM operation" << std::endl;
-        return;
-    }
+    assert(B.rows() == K);
+    assert(C.rows() == M);
+    assert(C.cols() == N);
     
-    // Apply beta to C
-    if (beta != 1.0f) {
-        for (size_t i = 0; i < M; ++i) {
-            for (size_t j = 0; j < N; ++j) {
-                C.at(i, j) *= beta;
-            }
-        }
-    }
+    scale(beta, C);
     
-    // Perform naive matrix multiplication: C = alpha * A * B + C
+
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = 0; j < N; ++j) {
             float sum = 0.0f;

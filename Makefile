@@ -5,6 +5,19 @@ CXX := clang++
 CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
 LDFLAGS := -lm -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/Cellar/simde/0.8.2/lib
 
+
+
+# Check the system architecture
+ARCH := $(shell uname -m)
+
+# Apple Silicon 
+ifeq ($(ARCH),arm64)
+    BLASFLAGS = -framework Accelerate -DACCELERATE_NEW_LAPACK
+else
+    # Intel x86_64
+    # TODO
+endif
+
 # Directories
 BUILD_DIR := build
 INCLUDE_DIR := include
@@ -48,23 +61,23 @@ help:
 
 # Build main executable
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $(BLASFLAGS) $^ -o $@ $(LDFLAGS)
 
 # Compile main source
 $(MAIN_OBJ): $(MAIN_SRC)
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(BLASFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Compile benchmark source
 $(BENCHMARK_OBJ): $(BENCHMARK_SRC)
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(BLASFLAGS)  -I$(INCLUDE_DIR) -c $< -o $@
 
 # Compile implementation sources
 $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(BLASFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Run the benchmark
 run: $(TARGET)
-	./$(TARGET)
+	VECLIB_MAXIMUM_THREADS=1 ./$(TARGET)
 
 # Clean build artifacts
 clean:

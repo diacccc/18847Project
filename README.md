@@ -24,6 +24,8 @@
 For macOS, 
 ```shell
 brew install libomp
+
+brew install simde
 ```
 
 

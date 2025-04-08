@@ -74,7 +74,7 @@ private:
     size_t warmup_runs_ = 3;
     size_t benchmark_runs_ = 10;
     bool validate_results_ = true;
-    std::string reference_impl_ = "cpu_naive";
+    std::string reference_impl_ = "BLAS";
     
     // Benchmark a single implementation with given matrix sizes
     BenchmarkResult benchmarkImplementation(

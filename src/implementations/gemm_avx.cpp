@@ -2,8 +2,9 @@
 #include <unordered_map>
 #include <functional>
 #ifdef __APPLE__
-  #define SIMDE_ENABLE_NATIVE_ALIASES
-  #include <simde/x86/avx2.h>
+//   #define SIMDE_ENABLE_NATIVE_ALIASES
+//   #include <simde/x86/avx2.h>
+  #include <arm_neon.h>
 #else
   #include <immintrin.h>
 #endif
@@ -26,7 +27,41 @@ void GemmAVX::execute(
     assert(C.cols() == N);
     
     scale(beta, C);
-    
+    #ifdef __APPLE__
+    float32x4_t valpha = vdupq_n_f32(alpha);
+    for (size_t i = 0; i < M; i += 4) {
+        for (size_t j = 0; j < N; j += 4) {
+            float32x4_t c0 = vdupq_n_f32(0);
+            float32x4_t c1 = vdupq_n_f32(0);
+            float32x4_t c2 = vdupq_n_f32(0);
+            float32x4_t c3 = vdupq_n_f32(0);
+            for (size_t k = 0; k < K; ++k) {
+                float32x4_t a = vmulq_f32(valpha, vld1q_f32(&A.at(i, k)));
+                float32x4_t b0 = vdupq_n_f32(B.at(k, j));
+                float32x4_t b1 = vdupq_n_f32(B.at(k, j + 1));
+                float32x4_t b2 = vdupq_n_f32(B.at(k, j + 2));
+                float32x4_t b3 = vdupq_n_f32(B.at(k, j + 3));
+                
+                // On Apple Silicon (ARM), we can use FMA
+                #ifdef __ARM_FEATURE_FMA
+                c0 = vfmaq_f32(c0, a, b0);
+                c1 = vfmaq_f32(c1, a, b1);
+                c2 = vfmaq_f32(c2, a, b2);
+                c3 = vfmaq_f32(c3, a, b3);
+                #else
+                c0 = vaddq_f32(vmulq_f32(a, b0), c0);
+                c1 = vaddq_f32(vmulq_f32(a, b1), c1);
+                c2 = vaddq_f32(vmulq_f32(a, b2), c2);
+                c3 = vaddq_f32(vmulq_f32(a, b3), c3);
+                #endif
+            }
+            vst1q_f32(&C.at(i, j),     vaddq_f32(c0, vld1q_f32(&C.at(i, j))));
+            vst1q_f32(&C.at(i, j + 1), vaddq_f32(c1, vld1q_f32(&C.at(i, j + 1))));
+            vst1q_f32(&C.at(i, j + 2), vaddq_f32(c2, vld1q_f32(&C.at(i, j + 2))));
+            vst1q_f32(&C.at(i, j + 3), vaddq_f32(c3, vld1q_f32(&C.at(i, j + 3))));
+        }
+    }
+    #else 
     __m128 valpha = _mm_set1_ps(alpha);
     for (size_t i = 0; i < M; i += 4) {
         for (size_t j = 0; j < N; j += 4) {
@@ -57,6 +92,7 @@ void GemmAVX::execute(
             _mm_storeu_ps(&C.at(i, j + 3), _mm_add_ps(c3, _mm_loadu_ps(&C.at(i, j + 3))));
         }
     }
+    #endif
 }
 
 }

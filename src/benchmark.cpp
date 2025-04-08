@@ -30,12 +30,9 @@ void GemmBenchmark::addAllImplementations() {
     // Get all registered implementations
     // We'll create each one and add it
     std::vector<std::string> impl_names = {
-        "cpu_naive", "cpu_avx",
+        // "cpu_naive", 
+        "cpu_avx",
         "BLAS"
-        //"cpu_openblas",
-        // "gpu_naive", "gpu_cutlass"
-        // Add your custom implementations here
-        // "cpu_optimized", "gpu_optimized"
     };
     
     for (const auto& name : impl_names) {
@@ -76,7 +73,7 @@ std::vector<BenchmarkResult> GemmBenchmark::runAll() {
         std::tie(M, N, K) = size;
         
         std::cout << "Benchmarking matrix size: " << M << "x" << N << "x" << K << std::endl;
-        const size_t LD = 2000;
+        const size_t LD = 3000;
         // Create matrices for this benchmark
         Matrix<float> A(M, K, LD);
         Matrix<float> B(K, N, LD);

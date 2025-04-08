@@ -12,13 +12,22 @@ namespace gemm {
                 Matrix<float>& C
             ) override;
 
-            void kernel_4x1_sgemm(
+            void macro_kernel_4x1_sgemm_neon(
                     size_t M, size_t N, size_t K, 
                     float alpha, 
-                    float *A, int LDA, 
-                    float *B, int LDB, 
+                    const float *A, int LDA, 
+                    const float *B, int LDB, 
                     float beta, 
                     float *C, int LDC
             );
+
+            void macro_kernel_4x1_sgemm_intel(
+                size_t M, size_t N, size_t K, 
+                float alpha, 
+                const float *A, int LDA, 
+                const float *B, int LDB, 
+                float beta, 
+                float *C, int LDC
+        );
         };
 }

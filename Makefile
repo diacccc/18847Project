@@ -19,7 +19,7 @@ else
     CXX := g++
 	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native 
 	LDFLAGS := -lm 
-    BLASFLAGS = -lcblas
+    BLASFLAGS = -lopenblas
 endif
 
 # Directories
@@ -65,19 +65,19 @@ help:
 
 # Build main executable
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(BLASFLAGS)
 
 # Compile main source
 $(MAIN_OBJ): $(MAIN_SRC)
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
 
 # Compile benchmark source
 $(BENCHMARK_OBJ): $(BENCHMARK_SRC)
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS)  -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
 
 # Compile implementation sources
 $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
 
 # Run the benchmark
 run: $(TARGET)

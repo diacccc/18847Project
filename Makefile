@@ -81,7 +81,7 @@ $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
 
 # Run the benchmark
 run: $(TARGET)
-	VECLIB_MAXIMUM_THREADS=1 ./$(TARGET)
+	USE_GPU=0 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
 
 # Clean build artifacts
 clean:

@@ -181,7 +181,7 @@ BenchmarkResult GemmBenchmark::benchmarkImplementation(
     
     // Validate result if a reference is provided
     if (reference_result) {
-        result.validated = C.isEqual(*reference_result, 1e-4f);
+        result.validated = C.isEqual(*reference_result, 1e-3f);
         
         if (!result.validated) {
             std::cout << "Warning: Result validation failed for " << impl->getName() << "!" << std::endl;

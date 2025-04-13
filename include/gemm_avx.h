@@ -1,4 +1,5 @@
 #include "gemm.h"
+
 namespace gemm {
     class GemmAVX : public GemmImplementation {
         public:
@@ -11,8 +12,18 @@ namespace gemm {
                 float beta,
                 Matrix<float>& C
             ) override;
-
-            void macro_kernel_4x1_sgemm_neon(
+            
+            void packing_A_8x4_neon(
+                const float* A, 
+                size_t M, size_t K, size_t LDA,
+                float *packed_A
+            );
+            void packing_B_8x4_neon(
+                const float* B, 
+                size_t K, size_t N, size_t LDB,
+                float *packed_B
+            );
+            void macro_kernel_4x4_sgemm_neon(
                     size_t M, size_t N, size_t K, 
                     float alpha, 
                     const float *A, int LDA, 
@@ -20,6 +31,15 @@ namespace gemm {
                     float beta, 
                     float *C, int LDC
             );
+
+            void macro_kernel_8x4_sgemm_neon(
+                size_t M, size_t N, size_t K, 
+                float alpha, 
+                const float *A, int LDA, 
+                const float *B, int LDB, 
+                float beta, 
+                float *C, int LDC
+        );
 
             void macro_kernel_4x1_sgemm_intel(
                 size_t M, size_t N, size_t K, 
@@ -29,5 +49,5 @@ namespace gemm {
                 float beta, 
                 float *C, int LDC
         );
-        };
+    };
 }

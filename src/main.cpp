@@ -1,14 +1,15 @@
-#include "benchmark.h"
-#include "gemm.h"
 #include <iostream>
 #include <memory>
 #include <tuple>
 #include <vector>
 
+#include "benchmark.h"
+#include "gemm.h"
+
 using namespace gemm;
 
-int main(int argc, char **argv) {
-
+int main(int argc, char **argv)
+{
     // Initialize available implementations
     registerImplementations();
 
@@ -22,12 +23,10 @@ int main(int argc, char **argv) {
 
     matrix_sizes = {
         // Small matrices
-        {128, 128, 128},    {256, 256, 256},    {384, 384, 384},
-        {512, 512, 512},    {640, 640, 640},    {768, 768, 768},
-        {896, 896, 896},    {1024, 1024, 1024}, {1152, 1152, 1152},
-        {1280, 1280, 1280}, {1408, 1408, 1408}, {1536, 1536, 1536},
-        {1664, 1664, 1664}, {1792, 1792, 1792}, {1920, 1920, 1920},
-        {2048, 2048, 2048},
+        {128, 128, 128},    {256, 256, 256},    {384, 384, 384},    {512, 512, 512},
+        {640, 640, 640},    {768, 768, 768},    {896, 896, 896},    {1024, 1024, 1024},
+        {1152, 1152, 1152}, {1280, 1280, 1280}, {1408, 1408, 1408}, {1536, 1536, 1536},
+        {1664, 1664, 1664}, {1792, 1792, 1792}, {1920, 1920, 1920}, {2048, 2048, 2048},
         // // Non-square matrices
         // {1024, 2048, 512},
         // {2048, 1024, 3072}

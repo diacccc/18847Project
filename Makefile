@@ -19,7 +19,7 @@ else
     CXX := g++
 	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native 
 	LDFLAGS := -lm 
-    BLASFLAGS = -lcblas
+    BLASFLAGS = -lopenblas
 endif
 
 # Directories

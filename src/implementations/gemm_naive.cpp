@@ -1,27 +1,21 @@
 #include "gemm_naive.h"
-#include <unordered_map>
 #include <functional>
+#include <unordered_map>
 
 namespace gemm {
 
 // Implementation of NaiveCpuGemm::execute
-void GemmNaive::execute(
-    float alpha,
-    const Matrix<float>& A,
-    const Matrix<float>& B,
-    float beta,
-    Matrix<float>& C
-) {
+void GemmNaive::execute(float alpha, const Matrix<float> &A,
+                        const Matrix<float> &B, float beta, Matrix<float> &C) {
     const size_t M = A.rows();
     const size_t N = B.cols();
     const size_t K = A.cols();
-    
+
     assert(B.rows() == K);
     assert(C.rows() == M);
     assert(C.cols() == N);
-    
+
     scale(beta, C);
-    
 
     for (size_t i = 0; i < M; ++i) {
         for (size_t j = 0; j < N; ++j) {

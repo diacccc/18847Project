@@ -37,6 +37,7 @@ MAIN_SRC := $(SRC_DIR)/main.cpp
 BENCHMARK_SRC := $(SRC_DIR)/benchmark.cpp
 IMPL_SRCS := $(wildcard $(IMPL_DIR)/*.cpp)
 
+FORMAT_FILES := $(MAIN_SRC) $(BENCHMARK_SRC) $(IMPL_SRCS)
 # Object files
 MAIN_OBJ := $(BUILD_DIR)/main.o
 BENCHMARK_OBJ := $(BUILD_DIR)/benchmark.o
@@ -80,6 +81,16 @@ $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
 
 $(BUILD_DIR)/implementations/gemm_blas.o: $(IMPL_DIR)/gemm_blas.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ -DACCELERATE_NEW_LAPACK
+
+format:
+	clang-format -i -style=file $(FORMAT_FILES)
+
+format-check:
+	@echo "Checking code formatting..."
+	@clang-format -style=file --dry-run --Werror $(FORMAT_FILES) \
+		|| (echo "Code formatting check failed. Run 'make format' to fix." && exit 1)
+
+.PHONY: format format-check
 
 # Run the benchmark
 run: $(TARGET)

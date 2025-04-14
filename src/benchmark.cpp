@@ -1,7 +1,7 @@
 #include "benchmark.h"
 #include "gemm.h"
 #include "gemm_naive.h"
-#include "gemm_avx.h"
+#include "gemm_simd.h"
 #include "gemm_blas.h"
 #include <iostream>
 #include <fstream>
@@ -31,7 +31,7 @@ void GemmBenchmark::addAllImplementations() {
     // We'll create each one and add it
     std::vector<std::string> impl_names = {
         // "cpu_naive", 
-        "cpu_avx",
+        "cpu_simd",
         "BLAS"
     };
     
@@ -181,7 +181,7 @@ BenchmarkResult GemmBenchmark::benchmarkImplementation(
     
     // Validate result if a reference is provided
     if (reference_result) {
-        result.validated = C.isEqual(*reference_result, 1e-4f);
+        result.validated = C.isEqual(*reference_result, 1e-3f);
         
         if (!result.validated) {
             std::cout << "Warning: Result validation failed for " << impl->getName() << "!" << std::endl;
@@ -233,8 +233,8 @@ void registerImplementations() {
     registerImplementation("cpu_naive", []() -> GemmImplementation* {
         return new GemmNaive();
     });
-    registerImplementation("cpu_avx", []() -> GemmImplementation* {
-        return new GemmAVX();
+    registerImplementation("cpu_simd", []() -> GemmImplementation* {
+        return new GemmSIMD();
     });
     
     

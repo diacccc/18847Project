@@ -69,19 +69,21 @@ $(TARGET): $(OBJS)
 
 # Compile main source
 $(MAIN_OBJ): $(MAIN_SRC)
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
-
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 # Compile benchmark source
 $(BENCHMARK_OBJ): $(BENCHMARK_SRC)
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Compile implementation sources
 $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+$(BUILD_DIR)/implementations/gemm_blas.o: $(IMPL_DIR)/gemm_blas.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ -DACCELERATE_NEW_LAPACK
 
 # Run the benchmark
 run: $(TARGET)
-	VECLIB_MAXIMUM_THREADS=1 ./$(TARGET)
+	USE_GPU=0 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
 
 # Clean build artifacts
 clean:

@@ -65,19 +65,21 @@ help:
 
 # Build main executable
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(BLASFLAGS)
 
 # Compile main source
 $(MAIN_OBJ): $(MAIN_SRC)
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
-
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 # Compile benchmark source
 $(BENCHMARK_OBJ): $(BENCHMARK_SRC)
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS)  -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 # Compile implementation sources
 $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
-	$(CXX) $(CXXFLAGS) $(BLASFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
+
+$(BUILD_DIR)/implementations/gemm_blas.o: $(IMPL_DIR)/gemm_blas.cpp
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ -DACCELERATE_NEW_LAPACK
 
 # Run the benchmark
 run: $(TARGET)

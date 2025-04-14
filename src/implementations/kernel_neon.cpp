@@ -1,5 +1,5 @@
 #ifdef __APPLE__
-#include "gemm_avx.h"
+#include "gemm_simd.h"
 #include <unordered_map>
 #include <functional>
 #include <arm_neon.h>
@@ -10,14 +10,14 @@
 
 namespace gemm {
 
-void GemmAVX::packing_A_8x4_neon(
+void GemmSIMD::packing_A_8x4_neon(
     const float* A, 
     size_t M, size_t K, size_t LDA,
     float *packed_A
 ) {
     float* dst = packed_A;
-    for (int i = 0; i < M; i += 8) {
-        for (int j = 0; j < K; ++j) {
+    for (size_t i = 0; i < M; i += 8) {
+        for (size_t j = 0; j < K; ++j) {
             vst1q_f32(dst, vld1q_f32(&A(i, j)));
             vst1q_f32(dst + 4, vld1q_f32(&A(i + 4, j)));
             dst += 8;
@@ -25,7 +25,7 @@ void GemmAVX::packing_A_8x4_neon(
     }
 }
 
-void GemmAVX::packing_B_8x4_neon(
+void GemmSIMD::packing_B_8x4_neon(
     const float* B, 
     size_t K, size_t N, size_t LDB,
     float *packed_B
@@ -46,12 +46,12 @@ void GemmAVX::packing_B_8x4_neon(
     }
 }
 
-void GemmAVX::macro_kernel_4x4_sgemm_neon(
+void GemmSIMD::macro_kernel_4x4_sgemm_neon(
     size_t M, size_t N, size_t K, 
     float alpha, 
     const float *A, int LDA, 
     const float *B, int LDB, 
-    float beta, 
+    float, 
     float *C, int LDC
 ) {
     float32x4_t valpha = vdupq_n_f32(alpha);
@@ -114,12 +114,12 @@ void GemmAVX::macro_kernel_4x4_sgemm_neon(
     packed_A += 8; packed_B += 4; k++;
 
 
-void GemmAVX::macro_kernel_8x4_sgemm_neon(
+void GemmSIMD::macro_kernel_8x4_sgemm_neon(
     size_t M, size_t N, size_t K, 
     float alpha, 
-    const float *A, int LDA, 
-    const float *B, int LDB, 
-    float beta, 
+    const float *A, int, 
+    const float *B, int, 
+    float, 
     float *C, int LDC
 ) {
     const float *packed_A = A; 
@@ -128,7 +128,6 @@ void GemmAVX::macro_kernel_8x4_sgemm_neon(
     float32x4_t valpha = vdupq_n_f32(alpha);
     for (size_t i = 0; i < M; i += 8) {
         for (size_t j = 0; j < N; j += 4) {
-            const float *b_ptr0, *b_ptr1, *b_ptr2, *b_ptr3;
             float32x4_t a0, a1; 
             float32x4_t b0, b1, b2, b3;
             float32x4_t c00, c01, c10, c11, c20, c21, c30, c31;

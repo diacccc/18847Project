@@ -1,9 +1,9 @@
 #include "gemm.h"
 
 namespace gemm {
-    class GemmAVX : public GemmImplementation {
+    class GemmSIMD : public GemmImplementation {
         public:
-            std::string getName() const override { return "cpu_avx"; }
+            std::string getName() const override { return "cpu_simd"; }
             
             void execute(
                 float alpha,
@@ -13,6 +13,8 @@ namespace gemm {
                 Matrix<float>& C
             ) override;
             
+            #ifdef __APPLE__
+
             void packing_A_8x4_neon(
                 const float* A, 
                 size_t M, size_t K, size_t LDA,
@@ -39,7 +41,8 @@ namespace gemm {
                 const float *B, int LDB, 
                 float beta, 
                 float *C, int LDC
-        );
+            );
+            #else 
 
             void macro_kernel_4x1_sgemm_intel(
                 size_t M, size_t N, size_t K, 
@@ -48,6 +51,8 @@ namespace gemm {
                 const float *B, int LDB, 
                 float beta, 
                 float *C, int LDC
-        );
+            );
+            
+            #endif
     };
 }

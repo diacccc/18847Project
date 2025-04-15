@@ -134,8 +134,7 @@ void GemmOMP::micro_kernel_4x4(size_t M, size_t N, size_t K, float alpha, const 
     }
 }
 
-void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &B, float beta, Matrix<float> &C)
-{
+void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &B, float beta, Matrix<float> &C) {
     const size_t M = A.rows();
     const size_t K = A.cols();
     const size_t N = B.cols();
@@ -144,12 +143,14 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
 
     // Scale C by beta
     if (beta == 0.0f) {
+        #pragma omp parallel for collapse(2)
         for (size_t j = 0; j < N; ++j) {
             for (size_t i = 0; i < M; ++i) {
                 C.at(i, j) = 0.0f;
             }
         }
     } else if (beta != 1.0f) {
+        #pragma omp parallel for collapse(2)
         for (size_t j = 0; j < N; ++j) {
             for (size_t i = 0; i < M; ++i) {
                 C.at(i, j) *= beta;
@@ -157,16 +158,38 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         }
     }
 
-    // Simple parallelized matrix multiplication
+    // Define block sizes for cache efficiency
+    const size_t BM = 64; // Block size for M dimension
+    const size_t BN = 64; // Block size for N dimension
+    const size_t BK = 64; // Block size for K dimension
+
+    // Blocked matrix multiplication with OpenMP
     #pragma omp parallel for collapse(2)
-    for (size_t j = 0; j < N; ++j) {
-        for (size_t i = 0; i < M; ++i) {
-            float sum = 0.0f;
-            for (size_t k = 0; k < K; ++k) {
-                sum += A.at(i, k) * B.at(k, j);
+    for (size_t jb = 0; jb < N; jb += BN) {
+        for (size_t ib = 0; ib < M; ib += BM) {
+            // Define actual block sizes (handle edge cases)
+            size_t jb_end = std::min(jb + BN, N);
+            size_t ib_end = std::min(ib + BM, M);
+
+            // For each block of K
+            for (size_t kb = 0; kb < K; kb += BK) {
+                size_t kb_end = std::min(kb + BK, K);
+
+                // Process the current block
+                for (size_t j = jb; j < jb_end; ++j) {
+                    for (size_t i = ib; i < ib_end; ++i) {
+                        float sum = 0.0f;
+                        for (size_t k = kb; k < kb_end; ++k) {
+                            sum += A.at(i, k) * B.at(k, j);
+                        }
+                        // Update C using atomic operation to avoid race conditions
+                        #pragma omp atomic update
+                        C.at(i, j) += alpha * sum;
+                    }
+                }
             }
-            C.at(i, j) += alpha * sum;
         }
     }
 }
+
 } // namespace gemm

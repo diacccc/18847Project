@@ -3,6 +3,7 @@
 #include "gemm_naive.h"
 #include "gemm_avx.h"
 #include "gemm_blas.h"
+#include "gemm_omp.h"
 #include <iostream>
 #include <fstream>
 #include <algorithm>
@@ -32,7 +33,8 @@ void GemmBenchmark::addAllImplementations() {
     std::vector<std::string> impl_names = {
         // "cpu_naive", 
         "cpu_avx",
-        "BLAS"
+        "BLAS",
+        "cpu_omp",
     };
     
     for (const auto& name : impl_names) {
@@ -235,6 +237,9 @@ void registerImplementations() {
     });
     registerImplementation("cpu_avx", []() -> GemmImplementation* {
         return new GemmAVX();
+    });
+    registerImplementation("cpu_omp", []() -> GemmImplementation* {
+        return new GemmOMP();
     });
     
     

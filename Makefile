@@ -83,11 +83,11 @@ $(BUILD_DIR)/implementations/gemm_blas.o: $(IMPL_DIR)/gemm_blas.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ -DACCELERATE_NEW_LAPACK
 
 format:
-	clang-format -i -style=file $(FORMAT_FILES)
+	clang-format -i -style=Microsoft $(FORMAT_FILES)
 
 format-check:
 	@echo "Checking code formatting..."
-	@clang-format -style=file --dry-run --Werror $(FORMAT_FILES) \
+	@clang-format -style=Microsoft --dry-run --Werror $(FORMAT_FILES) \
 		|| (echo "Code formatting check failed. Run 'make format' to fix." && exit 1)
 
 .PHONY: format format-check

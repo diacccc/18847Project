@@ -1,3 +1,4 @@
+BasedOnStyle: Microsoft
 ---
 Language:        Cpp
 AccessModifierOffset: -2

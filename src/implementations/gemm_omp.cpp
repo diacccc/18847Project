@@ -7,24 +7,24 @@
 #include <cassert>
 #include <iostream>
 #include <omp.h>
-// #include <sys/sysctl.h>  // For sysctlbyname on macOS
+#include <sys/sysctl.h>  // For sysctlbyname on macOS
 
 namespace gemm
 {
-// Helper for packing sub-blocks of A (row-major)
+// Helper for packing sub-blocks of A (column-major)
 void pack_micro_A(const float *A, size_t m, size_t k, size_t LDA, float *packed) {
-    for (size_t i = 0; i < m; i++) {
-        for (size_t j = 0; j < k; j++) {
-            packed[i * k + j] = A[i * LDA + j];
+    for (size_t j = 0; j < k; j++) {
+        for (size_t i = 0; i < m; i++) {
+            packed[j * m + i] = A[i + j * LDA];
         }
     }
 }
 
-// Helper for packing sub-blocks of B (row-major)
+// Helper for packing sub-blocks of B (column-major)
 void pack_micro_B(const float *B, size_t k, size_t n, size_t LDB, float *packed) {
-    for (size_t i = 0; i < k; i++) {
-        for (size_t j = 0; j < n; j++) {
-            packed[i * n + j] = B[i * LDB + j];
+    for (size_t j = 0; j < n; j++) {
+        for (size_t i = 0; i < k; i++) {
+            packed[j * k + i] = B[i + j * LDB];
         }
     }
 }
@@ -45,24 +45,42 @@ size_t get_l3_cache_size() {
     // Default size (8MB is common for many systems)
     return 8 * 1024 * 1024;
 }
+
+void scale_matrix(float beta, Matrix<float> &C) {
+    if (beta == 0.0f) {
+        C.fill(0.0f);
+    } else if (beta != 1.0f) {
+        const size_t M = C.rows();
+        const size_t N = C.cols();
+        const size_t LDC = C.ld();
+
+        #pragma omp parallel for collapse(2)
+        for (size_t j = 0; j < N; ++j) {
+            for (size_t i = 0; i < M; ++i) {
+                C.at(i, j) *= beta;
+            }
+        }
+    }
+}
+
 void GemmOMP::micro_kernel_8x8(size_t K, float alpha,
                               const float *A, const float *B,
                               float *C, size_t LDC) {
     float c[8][8] = {0};
 
-    // For row-major layout
+    // For column-major layout
     for (size_t i = 0; i < 8; i++) {
         for (size_t k = 0; k < K; k++) {
             for (size_t j = 0; j < 8; j++) {
-                c[i][j] += A[i * K + k] * B[k * 8 + j];
+                c[i][j] += A[i + k * 8] * B[k + j * K];
             }
         }
     }
 
-    // Store results in row-major order
-    for (size_t i = 0; i < 8; i++) {
-        for (size_t j = 0; j < 8; j++) {
-            C[i * LDC + j] += alpha * c[i][j];
+    // Store results in column-major order
+    for (size_t j = 0; j < 8; j++) {
+        for (size_t i = 0; i < 8; i++) {
+            C[i + j * LDC] += alpha * c[i][j];
         }
     }
 }
@@ -72,22 +90,23 @@ void GemmOMP::micro_kernel_4x4(size_t M, size_t N, size_t K, float alpha,
                               float *C, size_t LDC) {
     float c[4][4] = {0};
 
-    // For row-major layout
+    // For column-major layout
     for (size_t i = 0; i < M; i++) {
         for (size_t k = 0; k < K; k++) {
             for (size_t j = 0; j < N; j++) {
-                c[i][j] += A[i * K + k] * B[k * N + j];
+                c[i][j] += A[i + k * M] * B[k + j * K];
             }
         }
     }
 
-    // Store results in row-major order
-    for (size_t i = 0; i < M; i++) {
-        for (size_t j = 0; j < N; j++) {
-            C[i * LDC + j] += alpha * c[i][j];
+    // Store results in column-major order
+    for (size_t j = 0; j < N; j++) {
+        for (size_t i = 0; i < M; i++) {
+            C[i + j * LDC] += alpha * c[i][j];
         }
     }
 }
+
 void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &B, float beta, Matrix<float> &C) {
     const size_t M = A.rows();
     const size_t K = A.cols();
@@ -142,13 +161,13 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
                 size_t k_block = std::min(KC, K - k);
 
                 // Pack block of A
-                pack_micro_A(&A(i, k), m_block, k_block, LDA, thread_packed_A);
+                pack_micro_A(&A.at(i, k), m_block, k_block, LDA, thread_packed_A);
 
                 for (size_t j = 0; j < N; j += NC) {
                     size_t n_block = std::min(NC, N - j);
 
                     // Pack block of B
-                    pack_micro_B(&B(k, j), k_block, n_block, LDB, thread_packed_B);
+                    pack_micro_B(&B.at(k, j), k_block, n_block, LDB, thread_packed_B);
 
                     // Process micro-kernels
                     for (size_t ii = 0; ii < m_block; ii += 8) {
@@ -162,13 +181,13 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
                                 micro_kernel_8x8(k_block, alpha,
                                                thread_packed_A + ii * k_block,
                                                thread_packed_B + jj,
-                                               &C(i + ii, j + jj), LDC);
+                                               &C.at(i + ii, j + jj), LDC);
                             } else {
                                 // Partial block kernel
                                 micro_kernel_4x4(micro_m, micro_n, k_block, alpha,
                                                thread_packed_A + ii * k_block,
                                                thread_packed_B + jj,
-                                               &C(i + ii, j + jj), LDC);
+                                               &C.at(i + ii, j + jj), LDC);
                             }
                         }
                     }
@@ -180,4 +199,5 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     // Free packed buffers
     delete[] packed_A;
     delete[] packed_B;
+}
 }

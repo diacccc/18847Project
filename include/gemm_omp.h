@@ -20,22 +20,18 @@ namespace gemm {
             Matrix<float>& C
         ) override;
 
-        void macro_kernel_4x4_sgemm(
-            size_t M, size_t N, size_t K,
-            float alpha,
-            const float *A, int LDA,
-            const float *B, int LDB,
-            float beta,
-            float *C, int LDC
-        );
+        void micro_kernel_4x4(
+        	size_t M, size_t N, size_t K,
+        	float alpha,
+            const float *A, const float *B,
+            float *C,
+            size_t LDC);
 
-        void macro_kernel_8x8_sgemm(
-            size_t M, size_t N, size_t K,
+        void micro_kernel_8x8(
+            size_t K,
             float alpha,
-            const float *A, int LDA,
-            const float *B, int LDB,
-            float beta,
-            float *C, int LDC
+            const float *A, const float *B, float *C,
+            size_t LDC
         );
     };
 

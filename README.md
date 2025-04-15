@@ -23,6 +23,8 @@
 
 For macOS, 
 ```shell
+brew install clang-format
+
 brew install libomp
 
 brew install simde

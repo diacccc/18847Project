@@ -51,105 +51,32 @@ void GemmOMP::micro_kernel_8x8(size_t K, float alpha, const float *A, const floa
 {
     float c[8][8] = {0};
 
-	#pragma omp simd
-    for (size_t k = 0; k < K; k++)
+	#pragma omp parallel for collapse(2)
+    for (size_t k = 0; k < K; ++k)
     {
-        // Load A values (8 values from one column of A)
-        float a0 = A[0 + k * 8];
-        float a1 = A[1 + k * 8];
-        float a2 = A[2 + k * 8];
-        float a3 = A[3 + k * 8];
-        float a4 = A[4 + k * 8];
-        float a5 = A[5 + k * 8];
-        float a6 = A[6 + k * 8];
-        float a7 = A[7 + k * 8];
+        float a[8];
+        float b[8];
 
-        // Load B values (8 values from one row of B)
-        float b0 = B[k + 0 * K];
-        float b1 = B[k + 1 * K];
-        float b2 = B[k + 2 * K];
-        float b3 = B[k + 3 * K];
-        float b4 = B[k + 4 * K];
-        float b5 = B[k + 5 * K];
-        float b6 = B[k + 6 * K];
-        float b7 = B[k + 7 * K];
+		#pragma omp simd
+        for (int i = 0; i < 8; ++i)
+            a[i] = A[i + k * 8];     // A is 8 x K, column-major or panel-packed
 
-        // Update C registers
-        c[0][0] += a0 * b0;
-        c[0][1] += a0 * b1;
-        c[0][2] += a0 * b2;
-        c[0][3] += a0 * b3;
-        c[0][4] += a0 * b4;
-        c[0][5] += a0 * b5;
-        c[0][6] += a0 * b6;
-        c[0][7] += a0 * b7;
+        #pragma omp simd
+        for (int j = 0; j < 8; ++j)
+            b[j] = B[k + j * K];     // B is K x 8, column-major
 
-        c[1][0] += a1 * b0;
-        c[1][1] += a1 * b1;
-        c[1][2] += a1 * b2;
-        c[1][3] += a1 * b3;
-        c[1][4] += a1 * b4;
-        c[1][5] += a1 * b5;
-        c[1][6] += a1 * b6;
-        c[1][7] += a1 * b7;
-
-        c[2][0] += a2 * b0;
-        c[2][1] += a2 * b1;
-        c[2][2] += a2 * b2;
-        c[2][3] += a2 * b3;
-        c[2][4] += a2 * b4;
-        c[2][5] += a2 * b5;
-        c[2][6] += a2 * b6;
-        c[2][7] += a2 * b7;
-
-        c[3][0] += a3 * b0;
-        c[3][1] += a3 * b1;
-        c[3][2] += a3 * b2;
-        c[3][3] += a3 * b3;
-        c[3][4] += a3 * b4;
-        c[3][5] += a3 * b5;
-        c[3][6] += a3 * b6;
-        c[3][7] += a3 * b7;
-
-        c[4][0] += a4 * b0;
-        c[4][1] += a4 * b1;
-        c[4][2] += a4 * b2;
-        c[4][3] += a4 * b3;
-        c[4][4] += a4 * b4;
-        c[4][5] += a4 * b5;
-        c[4][6] += a4 * b6;
-        c[4][7] += a4 * b7;
-
-        c[5][0] += a5 * b0;
-        c[5][1] += a5 * b1;
-        c[5][2] += a5 * b2;
-        c[5][3] += a5 * b3;
-        c[5][4] += a5 * b4;
-        c[5][5] += a5 * b5;
-        c[5][6] += a5 * b6;
-        c[5][7] += a5 * b7;
-
-        c[6][0] += a6 * b0;
-        c[6][1] += a6 * b1;
-        c[6][2] += a6 * b2;
-        c[6][3] += a6 * b3;
-        c[6][4] += a6 * b4;
-        c[6][5] += a6 * b5;
-        c[6][6] += a6 * b6;
-        c[6][7] += a6 * b7;
-
-        c[7][0] += a7 * b0;
-        c[7][1] += a7 * b1;
-        c[7][2] += a7 * b2;
-        c[7][3] += a7 * b3;
-        c[7][4] += a7 * b4;
-        c[7][5] += a7 * b5;
-        c[7][6] += a7 * b6;
-        c[7][7] += a7 * b7;
+		#pragma omp simd collapse(2)
+        for (int i = 0; i < 8; ++i)
+        {
+            for (int j = 0; j < 8; ++j)
+            {
+                c[i][j] += a[i] * b[j];
+            }
+        }
     }
 
 	// Update C matrix with the final results using 2D array notation
-	#pragma omp parallel for collapse(2)
+	#pragma omp simd for collapse(2)
     for (int i = 0; i < 8; i++)
     {
         for (int j = 0; j < 8; j++)

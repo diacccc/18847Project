@@ -142,21 +142,7 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     assert(B.rows() == K && C.rows() == M && C.cols() == N);
 
     // Scale C by beta
-    if (beta == 0.0f) {
-        #pragma omp parallel for collapse(2)
-        for (size_t j = 0; j < N; ++j) {
-            for (size_t i = 0; i < M; ++i) {
-                C.at(i, j) = 0.0f;
-            }
-        }
-    } else if (beta != 1.0f) {
-        #pragma omp parallel for collapse(2)
-        for (size_t j = 0; j < N; ++j) {
-            for (size_t i = 0; i < M; ++i) {
-                C.at(i, j) *= beta;
-            }
-        }
-    }
+    scale_matrix(beta, C);
 
     // Define block sizes for cache efficiency
     const size_t BM = 64; // Block size for M dimension
@@ -171,21 +157,29 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
             size_t jb_end = std::min(jb + BN, N);
             size_t ib_end = std::min(ib + BM, M);
 
+            // Allocate thread-local C block
+            float C_local[BM][BN] = {0};
+
             // For each block of K
             for (size_t kb = 0; kb < K; kb += BK) {
-                size_t kb_end = std::min(kb + BK, K);
+                const size_t kb_end = std::min(kb + BK, K);
 
-                // Process the current block
+                // Process this block
                 for (size_t j = jb; j < jb_end; ++j) {
                     for (size_t i = ib; i < ib_end; ++i) {
                         float sum = 0.0f;
                         for (size_t k = kb; k < kb_end; ++k) {
                             sum += A.at(i, k) * B.at(k, j);
                         }
-                        // Update C using atomic operation to avoid race conditions
-                        #pragma omp atomic update
-                        C.at(i, j) += alpha * sum;
+                        C_local[i-ib][j-jb] += sum;
                     }
+                }
+            }
+
+            // Update the global C with the local results
+            for (size_t j = jb; j < jb_end; ++j) {
+                for (size_t i = ib; i < ib_end; ++i) {
+                    C.at(i, j) += alpha * C_local[i-ib][j-jb];
                 }
             }
         }

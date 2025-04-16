@@ -1,13 +1,15 @@
 #include "benchmark.h"
-#include "gemm.h"
-//#include "gemm_avx.h"
-#include "gemm_blas.h"
-#include "gemm_naive.h"
-#include "gemm_omp.h"
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <numeric>
+
+#include "gemm.h"
+#include "gemm_blas.h"
+#include "gemm_naive.h"
+#include "gemm_omp.h"
+#include "gemm_simd.h"
 
 namespace gemm
 {
@@ -36,12 +38,8 @@ void GemmBenchmark::addAllImplementations()
 {
     // Get all registered implementations
     // We'll create each one and add it
-    std::vector<std::string> impl_names = {
-        // "cpu_naive",
-        // "cpu_avx",
-        "BLAS",
-        "cpu_omp",
-    };
+    std::vector<std::string> impl_names = {// "cpu_naive",
+                                           "cpu_simd", "BLAS", "cpu_omp"};
 
     for (const auto &name : impl_names)
     {
@@ -254,7 +252,7 @@ void registerImplementations()
     // Register CPU naive implementation
     registerImplementation("BLAS", []() -> GemmImplementation * { return new GemmBLAS(); });
     registerImplementation("cpu_naive", []() -> GemmImplementation * { return new GemmNaive(); });
-	// registerImplementation("cpu_avx", []() -> GemmImplementation * { return new GemmAVX(); });
+    registerImplementation("cpu_simd", []() -> GemmImplementation * { return new GemmSIMD(); });
     registerImplementation("cpu_omp", []() -> GemmImplementation * { return new GemmOMP(); });
 
     // Add more implementations here as they are developed

@@ -20,21 +20,11 @@ namespace gemm {
             Matrix<float>& C
         ) override;
 
-        void micro_kernel_4x4(
-        	size_t M, size_t N, size_t K,
-        	float alpha,
-            const float *A, const float *B,
-            float *C,
-            size_t LDC);
-
-        void micro_kernel_8x8(
-            size_t K,
-            float alpha,
-            const float *A, const float *B, float *C,
-            size_t LDC
-        );
+	private:
+    	// Helper methods
+    	void micro_kernel_8x8(size_t K, float alpha, const float *A, const float *B, float *C, size_t LDC);
+    	void micro_kernel_4x4(size_t M, size_t N, size_t K, float alpha, const float *A, const float *B, float *C, size_t LDC);
     };
-
 }
 
 #endif //GEMM_OMP_H

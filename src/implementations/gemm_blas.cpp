@@ -3,13 +3,15 @@
 #include <functional>
 #include <unordered_map>
 #ifdef __APPLE__
-#include <Accelerate/Accelerate.h>
+#include <cblas.h>
+// #include <Accelerate/Accelerate.h>
 #else
 #include <cblas.h>
 #endif
 
 namespace gemm
 {
+
 
 // Implementation of NaiveCpuGemm::execute
 void GemmBLAS::execute(float alpha, const Matrix<float> &A, const Matrix<float> &B, float beta, Matrix<float> &C)
@@ -21,7 +23,6 @@ void GemmBLAS::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
     assert(B.rows() == K);
     assert(C.rows() == M);
     assert(C.cols() == N);
-
     cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, M, N, K, alpha, A.data(), A.ld(), B.data(), B.ld(), beta,
                 C.data(), C.ld());
 }

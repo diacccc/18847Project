@@ -47,9 +47,9 @@ void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
             for (m_count = 0; m_count < M; m_count += m_inc)
             {
                 m_inc = (M - m_count > M_BLOCKING) ? M_BLOCKING : N - m_count;
-                packing_A_16_neon(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
+                packing_A_8_neon(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
 #ifdef __APPLE__
-                macro_kernel_16x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
+                macro_kernel_8x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
                                             &C.at(m_count, n_count), C.ld());
 
 #else

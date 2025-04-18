@@ -33,8 +33,8 @@ void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
 
     scale(beta, C);
 
-    float *packed_A = (float *)aligned_alloc(4096, K_BLOCKING * M_BLOCKING * sizeof(float));
-    float *packed_B = (float *)aligned_alloc(4096, K_BLOCKING * N_BLOCKING * sizeof(float));
+    float *packed_A = (float *) aligned_alloc(4096,K_BLOCKING*M_BLOCKING*sizeof(float));
+    float *packed_B = (float *) aligned_alloc(4096,K_BLOCKING*N_BLOCKING*sizeof(float));
     size_t m_count, n_count, k_count;
     size_t m_inc, n_inc, k_inc;
     for (n_count = 0; n_count < N; n_count += n_inc)
@@ -47,10 +47,10 @@ void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
             for (m_count = 0; m_count < M; m_count += m_inc)
             {
                 m_inc = (M - m_count > M_BLOCKING) ? M_BLOCKING : N - m_count;
-                packing_A_16_neon(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
+                packing_A_8_neon(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
 #ifdef __APPLE__
-                macro_kernel_16x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
-                                             &C.at(m_count, n_count), C.ld());
+                macro_kernel_8x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
+                                            &C.at(m_count, n_count), C.ld());
 
 #else
                 macro_kernel_4x1_sgemm_intel(M, N, K, alpha, A.data(), A.ld(), B.data(), B.ld(), beta, C.data(),

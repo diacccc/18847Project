@@ -28,6 +28,8 @@ brew install clang-format
 brew install libomp
 
 brew install simde
+
+brew install openblas
 ```
 
 

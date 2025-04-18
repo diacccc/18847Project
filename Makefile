@@ -11,9 +11,10 @@ ARCH := $(shell uname -m)
 # Apple Silicon 
 ifeq ($(ARCH),arm64)
 	CXX := clang++
-	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
+	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
 	LDFLAGS := -lm -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/Cellar/simde/0.8.2/lib
-    BLASFLAGS = -framework Accelerate -DACCELERATE_NEW_LAPACK
+	BLASFLAGS = -L/opt/homebrew/opt/openblas/lib -I/opt/homebrew/opt/openblas/include -lopenblas
+	# BLASFLAGS = -framework Accelerate -DACCELERATE_NEW_LAPACK 
 else
     # Intel x86_64
     CXX := g++
@@ -80,7 +81,7 @@ $(BUILD_DIR)/implementations/%.o: $(IMPL_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@
 
 $(BUILD_DIR)/implementations/gemm_blas.o: $(IMPL_DIR)/gemm_blas.cpp
-	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ -DACCELERATE_NEW_LAPACK
+	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
 
 format:
 	clang-format -i -style=Microsoft $(FORMAT_FILES)
@@ -94,7 +95,7 @@ format-check:
 
 # Run the benchmark
 run: $(TARGET)
-	USE_GPU=0 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
+	USE_GPU=0 OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
 
 # Clean build artifacts
 clean:

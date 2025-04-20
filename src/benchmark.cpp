@@ -39,7 +39,9 @@ void GemmBenchmark::addAllImplementations()
     // Get all registered implementations
     // We'll create each one and add it
     std::vector<std::string> impl_names = {// "cpu_naive",
-                                           "cpu_simd", "BLAS", "cpu_omp"};
+                                           "cpu_simd", "BLAS",
+//                                           "cpu_omp"
+                                           };
 
     for (const auto &name : impl_names)
     {

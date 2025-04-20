@@ -8,6 +8,7 @@
 #include "gemm.h"
 #include "gemm_blas.h"
 #include "gemm_naive.h"
+#include "gemm_omp.h"
 #include "gemm_simd.h"
 
 namespace gemm
@@ -38,7 +39,7 @@ void GemmBenchmark::addAllImplementations()
     // Get all registered implementations
     // We'll create each one and add it
     std::vector<std::string> impl_names = {// "cpu_naive",
-                                           "cpu_simd", "BLAS"};
+                                           "cpu_simd", "BLAS", "cpu_omp"};
 
     for (const auto &name : impl_names)
     {
@@ -195,7 +196,7 @@ BenchmarkResult GemmBenchmark::benchmarkImplementation(GemmImplementation *impl,
     // Validate result if a reference is provided
     if (reference_result)
     {
-        result.validated = C.isEqual(*reference_result, 1e-3f);
+        result.validated = C.isEqual(*reference_result, 1e-4f);
 
         if (!result.validated)
         {
@@ -252,6 +253,7 @@ void registerImplementations()
     registerImplementation("BLAS", []() -> GemmImplementation * { return new GemmBLAS(); });
     registerImplementation("cpu_naive", []() -> GemmImplementation * { return new GemmNaive(); });
     registerImplementation("cpu_simd", []() -> GemmImplementation * { return new GemmSIMD(); });
+    registerImplementation("cpu_omp", []() -> GemmImplementation * { return new GemmOMP(); });
 
     // Add more implementations here as they are developed
     // registerImplementation("cpu_optimized", []() -> GemmImplementation* {

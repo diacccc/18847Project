@@ -11,7 +11,7 @@ ARCH := $(shell uname -m)
 # Apple Silicon 
 ifeq ($(ARCH),arm64)
 	CXX := clang++
-	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
+	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
 	LDFLAGS := -lm -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/Cellar/simde/0.8.2/lib
 	BLASFLAGS = -L/opt/homebrew/opt/openblas/lib -I/opt/homebrew/opt/openblas/include -lopenblas
 	# BLASFLAGS = -framework Accelerate -DACCELERATE_NEW_LAPACK 
@@ -84,18 +84,19 @@ $(BUILD_DIR)/implementations/gemm_blas.o: $(IMPL_DIR)/gemm_blas.cpp
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -c $< -o $@ $(BLASFLAGS)
 
 format:
-	clang-format -i -style=file $(FORMAT_FILES)
+	clang-format -i -style=Microsoft $(FORMAT_FILES)
 
 format-check:
 	@echo "Checking code formatting..."
-	@clang-format -style=file --dry-run --Werror $(FORMAT_FILES) \
+	@clang-format -style=Microsoft --dry-run --Werror $(FORMAT_FILES) \
 		|| (echo "Code formatting check failed. Run 'make format' to fix." && exit 1)
 
 .PHONY: format format-check
 
 # Run the benchmark
 run: $(TARGET)
-	USE_GPU=0 OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
+	export OMP_NUM_THREADS=4 && \
+	VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
 
 # Clean build artifacts
 clean:

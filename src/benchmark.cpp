@@ -10,6 +10,7 @@
 #include "gemm_naive.h"
 #include "gemm_omp.h"
 #include "gemm_simd.h"
+#include "gemm_metal.h"  // Added Metal implementation header
 
 namespace gemm
 {
@@ -39,7 +40,12 @@ void GemmBenchmark::addAllImplementations()
     // Get all registered implementations
     // We'll create each one and add it
     std::vector<std::string> impl_names = {// "cpu_naive",
-                                           "cpu_simd", "BLAS", "cpu_omp"};
+                                           "cpu_simd", "BLAS",
+#ifdef __APPLE__
+                                           "Metal",  // Add Metal on Apple platforms
+#endif
+//                                           "cpu_omp"
+                                           };
 
     for (const auto &name : impl_names)
     {
@@ -249,16 +255,16 @@ GemmImplementation *createImplementation(const std::string &name)
 // Register all available implementations
 void registerImplementations()
 {
-    // Register CPU naive implementation
+    // Register implementations
     registerImplementation("BLAS", []() -> GemmImplementation * { return new GemmBLAS(); });
     registerImplementation("cpu_naive", []() -> GemmImplementation * { return new GemmNaive(); });
     registerImplementation("cpu_simd", []() -> GemmImplementation * { return new GemmSIMD(); });
     registerImplementation("cpu_omp", []() -> GemmImplementation * { return new GemmOMP(); });
-
-    // Add more implementations here as they are developed
-    // registerImplementation("cpu_optimized", []() -> GemmImplementation* {
-    //     return new OptimizedCpuGemm();
-    // });
+    
+#ifdef __APPLE__
+    // Register Metal implementation on Apple platforms
+    registerImplementation("Metal", []() -> GemmImplementation * { return new GemmMetal(); });
+#endif
 
     std::cout << "Registered " << implementation_factories.size() << " GEMM implementations" << std::endl;
 }

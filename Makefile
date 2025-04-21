@@ -110,8 +110,7 @@ format-check:
 
 # Run the benchmark
 run: $(TARGET)
-	export OMP_NUM_THREADS=4 && \
-	VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
+	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
 
 # Clean build artifacts
 clean:

@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 
     bool validate = args.getArgValueBool("--validate", true);
     benchmark.setValidateResults(validate);
-    if (validate)
+    if (validate && !args.hasArg("--impl"))
     {
         benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation("BLAS")));
     }

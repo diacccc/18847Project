@@ -1,53 +1,9 @@
 // src/rust_metal_gemm/src/lib.rs
 use std::ffi::{c_float, c_void};
 use std::slice;
+use std::path::Path;
+use std::fs;
 use metal::{CommandQueue, ComputePipelineState, Device, MTLResourceOptions, MTLSize};
-
-// Fixed Metal kernel with improved precision handling
-const METAL_SOURCE: &str = r#"
-#include <metal_stdlib>
-using namespace metal;
-
-kernel void gemm_kernel(
-    device const float* A [[buffer(0)]],
-    device const float* B [[buffer(1)]],
-    device float* C [[buffer(2)]],
-    constant float& alpha [[buffer(3)]],
-    constant float& beta [[buffer(4)]],
-    constant int& M [[buffer(5)]],
-    constant int& N [[buffer(6)]],
-    constant int& K [[buffer(7)]],
-    constant int& lda [[buffer(8)]],
-    constant int& ldb [[buffer(9)]],
-    constant int& ldc [[buffer(10)]],
-    uint2 gid [[thread_position_in_grid]])
-{
-    const int i = gid.x;
-    const int j = gid.y;
-    
-    // Bounds check
-    if (i >= M || j >= N) return;
-    
-    // Use higher precision for accumulation
-    float acc = 0.0f;
-    
-    // Calculate dot product
-    for (int k = 0; k < K; k++) {
-        // Column-major indexing: i + k * lda and k + j * ldb
-        acc += A[i + k * lda] * B[k + j * ldb];
-    }
-    
-    // Apply alpha scaling
-    acc *= alpha;
-    
-    // Apply beta scaling and store result
-    if (beta != 0.0f) {
-        C[i + j * ldc] = acc + beta * C[i + j * ldc];
-    } else {
-        C[i + j * ldc] = acc;
-    }
-}
-"#;
 
 pub struct MetalGEMM {
     device: Device,
@@ -60,13 +16,22 @@ impl MetalGEMM {
         let device = Device::system_default().expect("No Metal device found");
         let command_queue = device.new_command_queue();
         
+        // Path to the metal shader file - relative to where the binary is executed
+        let shader_path = Path::new("src/rust_metal_gemm/src/sgemm_naive.metal");
+        
+        // Load the Metal shader source code from file
+        let metal_source = fs::read_to_string(shader_path)
+            .expect("Failed to read Metal kernel file");
+        
         // Compile the Metal kernel
         let lib = device
-            .new_library_with_source(METAL_SOURCE, &metal::CompileOptions::new())
+            .new_library_with_source(&metal_source, &metal::CompileOptions::new())
             .expect("Failed to compile Metal source");
+        
         let kernel = lib
             .get_function("gemm_kernel", None)
             .expect("Failed to get kernel function");
+            
         let pipeline_state = device
             .new_compute_pipeline_state_with_function(&kernel)
             .expect("Failed to create pipeline state");

@@ -8,10 +8,17 @@ ARCH := $(shell uname -m)
 # Apple Silicon 
 ifeq ($(ARCH),arm64)
 	CXX := clang++
-	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
-	LDFLAGS := -lm -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/Cellar/simde/0.8.2/lib
-	BLASFLAGS = -L/opt/homebrew/opt/openblas/lib -I/opt/homebrew/opt/openblas/include -lopenblas
-	# BLASFLAGS = -framework Accelerate -DACCELERATE_NEW_LAPACK 
+	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native 
+	LDFLAGS := -lm
+	
+	# OpenMP flags
+	CXXFLAGS += -I/opt/homebrew/opt/libomp/include
+	LDFLAGS += -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib 
+
+	# OpenBLAS flags
+	CXXFLAGS += -I/opt/homebrew/opt/openblas/include
+	LDFLAGS += -L/opt/homebrew/opt/openblas/lib -lopenblas
+	# LDFLAGS += -framework Accelerate -DACCELERATE_NEW_LAPACK 
 
 	# Rust Metal implementation flags
 	RUST_DIR := src/rust_metal_gemm
@@ -59,7 +66,7 @@ OBJS := $(MAIN_OBJ) $(BENCHMARK_OBJ) $(IMPL_OBJS)
 TARGET := gemm
 
 # Phony targets
-.PHONY: all clean run help rust
+.PHONY: all clean run help rust format
 
 # Default target
 all: rust $(TARGET)

@@ -1,3 +1,4 @@
+#ifdef __APPLE__
 #include "gemm_metal.h"
 #include <cmath>
 #include <functional>
@@ -122,3 +123,5 @@ void GemmMetal::execute(float alpha, const Matrix<float> &A, const Matrix<float>
 }
 
 } // namespace gemm
+
+#endif

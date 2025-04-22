@@ -43,7 +43,7 @@ void GemmBenchmark::addAllImplementations()
         // "cpu_naive",
         "cpu_simd", "BLAS", "cpu_omp",
 #ifdef __APPLE__
-        "Metal", // Add Metal on Apple platforms
+        "gpu_metal", // Add Metal on Apple platforms
 #endif
     };
 
@@ -263,7 +263,7 @@ void registerImplementations()
 
 #ifdef __APPLE__
     // Register Metal implementation on Apple platforms
-    registerImplementation("Metal", []() -> GemmImplementation * { return new GemmMetal(); });
+    registerImplementation("gpu_metal", []() -> GemmImplementation * { return new GemmMetal(); });
 #endif
 
     std::cout << "Registered " << implementation_factories.size() << " GEMM implementations" << std::endl;

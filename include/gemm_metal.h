@@ -11,7 +11,7 @@ namespace gemm {
         GemmMetal();
         ~GemmMetal();
 
-        std::string getName() const override { return "Metal"; }
+        std::string getName() const override { return "gpu_metal"; }
         
         void execute(
             float alpha,

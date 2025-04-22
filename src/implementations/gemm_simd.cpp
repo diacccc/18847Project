@@ -61,11 +61,10 @@ void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
 
                     macro_kernel_8x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
                                                 &C.at(m_count, n_count), C.ld());
-
                 }
             }
         }
-        #else
+#else
         for (n_count = 0; n_count < N; n_count += N_BLOCKING)
         {
             n_inc = (N - n_count > N_BLOCKING) ? N_BLOCKING : (N - n_count);
@@ -79,12 +78,11 @@ void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
                     packing_A_8_intel(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
 
                     macro_kernel_8x8_sgemm_intel(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
-                                                &C.at(m_count, n_count), C.ld());
-
+                                                 &C.at(m_count, n_count), C.ld());
                 }
             }
         }
-        #endif
+#endif
         free(packed_A);
         free(packed_B);
     }

@@ -35,17 +35,18 @@ void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib,
 
         for (size_t k = 0; k < K; k++)
         {
+            size_t kMR = k * MR;
 #pragma omp simd
             for (size_t m = 0; m < m_min; m++)
             {
                 // Packed format optimized for micro-kernel access pattern
-                packed[m + k * MR] = A_data[(ib + mp + m) + (kb + k) * LDA];
+                packed[m + kMR] = A_data[(ib + mp + m) + (kb + k) * LDA];
             }
 
             // Pad with zeros if needed
             for (size_t m = m_min; m < MR; m++)
             {
-                packed[m + k * MR] = 0.0f;
+                packed[m + kMR] = 0.0f;
             }
         }
         packed += MR * K; // Move to the next panel
@@ -65,20 +66,22 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
 
         for (size_t n = 0; n < n_min; n++)
         {
+            size_t nK = n * K;
 #pragma omp simd
             for (size_t k = 0; k < K; k++)
             {
                 // Packed format optimized for micro-kernel access pattern
-                packed[k + n * K] = B_data[(kb + k) + (jb + np + n) * LDB];
+                packed[k + nK] = B_data[(kb + k) + (jb + np + n) * LDB];
             }
         }
 
         // Pad with zeros if needed
         for (size_t n = n_min; n < NR; n++)
         {
+            size_t nK = n * K;
             for (size_t k = 0; k < K; k++)
             {
-                packed[k + n * K] = 0.0f;
+                packed[k + nK] = 0.0f;
             }
         }
 
@@ -96,15 +99,16 @@ void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const floa
     // Main computation loop - this is the most critical part for performance
     for (size_t k = 0; k < K; k++)
     {
+        size_t kMR = k * MR;
         // Load a single column of A (MR elements)
-        float a0 = A[0 + k * MR];
-        float a1 = A[1 + k * MR];
-        float a2 = A[2 + k * MR];
-        float a3 = A[3 + k * MR];
-        float a4 = A[4 + k * MR];
-        float a5 = A[5 + k * MR];
-        float a6 = A[6 + k * MR];
-        float a7 = A[7 + k * MR];
+        float a0 = A[0 + kMR];
+        float a1 = A[1 + kMR];
+        float a2 = A[2 + kMR];
+        float a3 = A[3 + kMR];
+        float a4 = A[4 + kMR];
+        float a5 = A[5 + kMR];
+        float a6 = A[6 + kMR];
+        float a7 = A[7 + kMR];
 
 // For each element in the column of A, multiply by row of B
 #pragma omp simd
@@ -122,14 +126,19 @@ void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const floa
         }
     }
 
-    // Store results back to C with alpha scaling
+// Store results back to C with alpha scaling - fully unrolled
+#pragma omp simd
     for (size_t j = 0; j < NR; j++)
     {
-#pragma omp simd
-        for (size_t i = 0; i < MR; i++)
-        {
-            C[i + j * LDC] += alpha * c[i][j];
-        }
+        const size_t jLDC = j * LDC;
+        C[0 + jLDC] += alpha * c[0][j];
+        C[1 + jLDC] += alpha * c[1][j];
+        C[2 + jLDC] += alpha * c[2][j];
+        C[3 + jLDC] += alpha * c[3][j];
+        C[4 + jLDC] += alpha * c[4][j];
+        C[5 + jLDC] += alpha * c[5][j];
+        C[6 + jLDC] += alpha * c[6][j];
+        C[7 + jLDC] += alpha * c[7][j];
     }
 }
 
@@ -181,10 +190,12 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
                     for (size_t nn = 0; nn < n_size; nn += NR)
                     {
                         size_t n_micro = n_size - nn > NR ? NR : n_size - nn;
+                        size_t c_base_col = n + nn;
 
                         for (size_t mm = 0; mm < m_size; mm += MR)
                         {
                             size_t m_micro = m_size - mm > MR ? MR : m_size - mm;
+                            size_t c_base_row = m + mm;
 
                             // If we have a full micro-kernel block, use the optimized version
                             if (m_micro == MR && n_micro == NR)
@@ -192,28 +203,34 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
                                 // Point to the correct positions in packed data
                                 const float *a_micro = packed_A + mm * k_size;
                                 const float *b_micro = packed_B + nn * k_size;
-                                float *c_micro = C_data + (m + mm) + (n + nn) * LDC;
+                                float *c_micro = C_data + (c_base_row) + (c_base_col)*LDC;
 
                                 // Execute micro-kernel
                                 micro_kernel(k_size, alpha, a_micro, b_micro, c_micro, LDC);
                             }
                             else
                             {
-                                // Handle edge cases with a simple implementation
+                                // move the * ops to the outer loop to reduce overhead, reuse variables
+                                size_t a_base = mm * k_size;
+                                size_t b_base = nn * k_size;
+
                                 for (size_t mr = 0; mr < m_micro; mr++)
                                 {
+                                    size_t a_offset = (a_base + mr * k_size);
+                                    size_t c_row = c_base_row + mr;
+
                                     for (size_t nr = 0; nr < n_micro; nr++)
                                     {
                                         float sum = 0.0f;
+                                        size_t b_offset = b_base + nr * k_size;
 
 #pragma omp simd reduction(+ : sum)
                                         for (size_t kk = 0; kk < k_size; kk++)
                                         {
-                                            sum +=
-                                                packed_A[(mm + mr) * k_size + kk] * packed_B[(nn + nr) * k_size + kk];
+                                            sum += packed_A[a_offset + kk] * packed_B[b_offset + kk];
                                         }
 
-                                        C_data[(m + mm + mr) + (n + nn + nr) * LDC] += alpha * sum;
+                                        C_data[c_row + (c_base_col + nr) * LDC] += alpha * sum;
                                     }
                                 }
                             }

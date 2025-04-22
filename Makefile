@@ -33,7 +33,7 @@ ifeq ($(ARCH),arm64)
 else
     # Intel x86_64
     CXX := g++
-	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native 
+	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -fopenmp
 	LDFLAGS := -lm 
     BLASFLAGS = -lopenblas
 endif

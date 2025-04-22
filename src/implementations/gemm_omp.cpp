@@ -150,34 +150,34 @@ namespace gemm
             float* packed_B = (float*) aligned_alloc(64, K_BLOCKING * N_BLOCKING * sizeof(float));
 
             #pragma omp for schedule(dynamic)
-            for (size_t j = 0; j < N; j += N_BLOCKING) {
-                size_t n_size = N - j > N_BLOCKING ? N_BLOCKING : N - j;
+            for (size_t n = 0; n < N; n += N_BLOCKING) {
+                size_t n_size = N - n > N_BLOCKING ? N_BLOCKING : N - n;
 
                 for (size_t k = 0; k < K; k += K_BLOCKING) {
                     size_t k_size = K - k > K_BLOCKING ? K_BLOCKING : K - k;
 
                     // Pack B block once and reuse for multiple A blocks
-                    pack_block_B(B, packed_B, k, j, k_size, n_size);
+                    pack_block_B(B, packed_B, k, n, k_size, n_size);
 
-                    for (size_t i = 0; i < M; i += M_BLOCKING) {
-                        size_t m_size = M - i > M_BLOCKING ? M_BLOCKING : M - i;
+                    for (size_t m = 0; m < M; m += M_BLOCKING) {
+                        size_t m_size = M - m > M_BLOCKING ? M_BLOCKING : M - m;
 
                         // Pack A block
-                        pack_block_A(A, packed_A, i, k, m_size, k_size);
+                        pack_block_A(A, packed_A, m, k, m_size, k_size);
 
                         // Process packed blocks with micro-kernels
-                        for (size_t jj = 0; jj < n_size; jj += NR) {
-                            size_t n_micro = n_size - jj > NR ? NR : n_size - jj;
+                        for (size_t nn = 0; nn < n_size; nn += NR) {
+                            size_t n_micro = n_size - nn > NR ? NR : n_size - nn;
 
-                            for (size_t ii = 0; ii < m_size; ii += MR) {
-                                size_t m_micro = m_size - ii > MR ? MR : m_size - ii;
+                            for (size_t mm = 0; mm < m_size; mm += MR) {
+                                size_t m_micro = m_size - mm > MR ? MR : m_size - mm;
 
                                 // If we have a full micro-kernel block, use the optimized version
                                 if (m_micro == MR && n_micro == NR) {
                                     // Point to the correct positions in packed data
-                                    const float* a_micro = packed_A + ii * k_size;
-                                    const float* b_micro = packed_B + jj * k_size;
-                                    float* c_micro = C_data + (i + ii) + (j + jj) * LDC;
+                                    const float* a_micro = packed_A + mm * k_size;
+                                    const float* b_micro = packed_B + nn * k_size;
+                                    float* c_micro = C_data + (m + mm) + (n + nn) * LDC;
 
                                     // Execute micro-kernel
                                     micro_kernel(k_size, alpha, a_micro, b_micro, c_micro, LDC);
@@ -189,11 +189,11 @@ namespace gemm
 
                                             #pragma omp simd reduction(+:sum)
                                             for (size_t kk = 0; kk < k_size; kk++) {
-                                                sum += packed_A[(ii + mr) * k_size + kk] *
-                                                      packed_B[(jj + nr) * k_size + kk];
+                                                sum += packed_A[(mm + mr) * k_size + kk] *
+                                                      packed_B[(nn + nr) * k_size + kk];
                                             }
 
-                                            C_data[(i + ii + mr) + (j + jj + nr) * LDC] += alpha * sum;
+                                            C_data[(m + mm + mr) + (n + nn + nr) * LDC] += alpha * sum;
                                         }
                                     }
                                 }

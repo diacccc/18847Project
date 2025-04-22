@@ -109,8 +109,12 @@ format-check:
 .PHONY: format format-check
 
 # Run the benchmark
+run-single: $(TARGET)
+	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
+
+# Run the benchmark
 run: $(TARGET)
-	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
+	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 ./$(TARGET)
 
 # Clean build artifacts
 clean:

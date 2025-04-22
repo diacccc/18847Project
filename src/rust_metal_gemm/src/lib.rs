@@ -1,8 +1,7 @@
 // src/rust_metal_gemm/src/lib.rs
-use std::ffi::{c_float, c_void, CString};
-use std::ptr;
+use std::ffi::{c_float, c_void};
 use std::slice;
-use metal::{Buffer, CommandQueue, ComputePipelineState, Device, MTLResourceOptions, MTLSize};
+use metal::{CommandQueue, ComputePipelineState, Device, MTLResourceOptions, MTLSize};
 
 // Fixed Metal kernel with improved precision handling
 const METAL_SOURCE: &str = r#"

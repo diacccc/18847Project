@@ -38,13 +38,11 @@ GemmMetal::~GemmMetal() {
 bool GemmMetal::initialize() {
     if (metal_gemm_impl == nullptr) {
         try {
-            std::cout << "Initializing Metal GEMM implementation..." << std::endl;
             metal_gemm_impl = metal_gemm_create();
             if (metal_gemm_impl == nullptr) {
                 std::cerr << "Failed to create Metal GEMM implementation" << std::endl;
                 return false;
             }
-            std::cout << "Metal GEMM initialized successfully" << std::endl;
         } catch (const std::exception& e) {
             std::cerr << "Exception during Metal GEMM initialization: " << e.what() << std::endl;
             return false;

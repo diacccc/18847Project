@@ -66,14 +66,14 @@ OBJS := $(MAIN_OBJ) $(BENCHMARK_OBJ) $(IMPL_OBJS)
 TARGET := gemm
 
 # Phony targets
-.PHONY: all clean run help rust format
+.PHONY: all clean run help rust format format-check run-single
 
 # Default target
 all: rust $(TARGET)
 
 # Help message
 help:
-	@echo "CPU GEMM Optimization Project"
+	@echo "GEMM Optimization Project"
 	@echo "Usage:"
 	@echo "  make        - Build the project"
 	@echo "  make run    - Run the benchmark"
@@ -112,8 +112,6 @@ format-check:
 	@echo "Checking code formatting..."
 	@clang-format -style=Microsoft --dry-run --Werror $(FORMAT_FILES) \
 		|| (echo "Code formatting check failed. Run 'make format' to fix." && exit 1)
-
-.PHONY: format format-check
 
 # Run the benchmark
 run-single: $(TARGET)

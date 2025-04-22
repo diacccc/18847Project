@@ -40,11 +40,10 @@ void GemmBenchmark::addAllImplementations()
     // Get all registered implementations
     // We'll create each one and add it
     std::vector<std::string> impl_names = {// "cpu_naive",
-                                           "cpu_simd", "BLAS",
+                                           "cpu_simd", "BLAS", "cpu_omp",
 #ifdef __APPLE__
                                            "Metal",  // Add Metal on Apple platforms
-#endif
-//                                           "cpu_omp"
+#endif                                       
                                            };
 
     for (const auto &name : impl_names)

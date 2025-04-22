@@ -3,6 +3,9 @@
 #include <functional>
 #include <unordered_map>
 
+#ifdef _OPENMP
+    #include <omp.h>
+#endif
 #ifdef __APPLE__
 #include <arm_neon.h>
 #else
@@ -13,13 +16,15 @@
 #define B(i, j) B[(i) + (j) * LDB]
 #define C(i, j) C[(i) + (j) * LDC]
 
-#define M_BLOCKING 96
-#define N_BLOCKING 256
-#define K_BLOCKING 192
+#define M_BLOCKING 32
+#define N_BLOCKING 64
+#define K_BLOCKING 64
+//#define M_BLOCKING 96
+//#define N_BLOCKING 256
+//#define K_BLOCKING 192
 
 namespace gemm
 {
-
 // Implementation of NaiveCpuGemm::execute
 void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> &B, float beta, Matrix<float> &C)
 {
@@ -33,31 +38,38 @@ void GemmSIMD::execute(float alpha, const Matrix<float> &A, const Matrix<float> 
 
     scale(beta, C);
 
-    float *packed_A = (float *) aligned_alloc(4096,K_BLOCKING*M_BLOCKING*sizeof(float));
-    float *packed_B = (float *) aligned_alloc(4096,K_BLOCKING*N_BLOCKING*sizeof(float));
-    size_t m_count, n_count, k_count;
-    size_t m_inc, n_inc, k_inc;
-    for (n_count = 0; n_count < N; n_count += n_inc)
+    #pragma omp parallel
     {
-        n_inc = (N - n_count > N_BLOCKING) ? N_BLOCKING : N - n_count;
-        for (k_count = 0; k_count < K; k_count += k_inc)
-        {
-            k_inc = (K - k_count > K_BLOCKING) ? K_BLOCKING : K - k_count;
-            packing_B_8_neon(&B.at(k_count, n_count), k_inc, n_inc, B.ld(), packed_B);
-            for (m_count = 0; m_count < M; m_count += m_inc)
-            {
-                m_inc = (M - m_count > M_BLOCKING) ? M_BLOCKING : N - m_count;
-                packing_A_8_neon(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
-#ifdef __APPLE__
-                macro_kernel_8x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
-                                            &C.at(m_count, n_count), C.ld());
+        // Each thread needs its own workspace
+        float *packed_A = (float *) aligned_alloc(4096, K_BLOCKING*M_BLOCKING*sizeof(float));
+        float *packed_B = (float *) aligned_alloc(4096, K_BLOCKING*N_BLOCKING*sizeof(float));
+        size_t n_count, n_inc, m_count, m_inc, k_count, k_inc;
 
-#else
-                macro_kernel_4x1_sgemm_intel(M, N, K, alpha, A.data(), A.ld(), B.data(), B.ld(), beta, C.data(),
-                                             C.ld());
-#endif
+        #pragma omp for
+        for (n_count = 0; n_count < N; n_count += N_BLOCKING)
+        {
+            n_inc = (N - n_count > N_BLOCKING) ? N_BLOCKING : (N - n_count);
+            for (k_count = 0; k_count < K; k_count += K_BLOCKING)
+            {
+                k_inc = (K - k_count > K_BLOCKING) ? K_BLOCKING : (K - k_count);
+                packing_B_8_neon(&B.at(k_count, n_count), k_inc, n_inc, B.ld(), packed_B);
+                for (m_count = 0; m_count < M; m_count += M_BLOCKING)
+                {
+                    m_inc = (M - m_count > M_BLOCKING) ? M_BLOCKING : (M - m_count);
+                    packing_A_8_neon(&A.at(m_count, k_count), m_inc, k_inc, A.ld(), packed_A);
+                    #ifdef __APPLE__
+                    macro_kernel_8x8_sgemm_neon(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
+                                               &C.at(m_count, n_count), C.ld());
+                    #else
+                    macro_kernel_4x1_sgemm_intel(m_inc, n_inc, k_inc, alpha, packed_A, A.ld(), packed_B, B.ld(), beta,
+                                               &C.at(m_count, n_count), C.ld());
+                    #endif
+                }
             }
         }
+
+        free(packed_A);
+        free(packed_B);
     }
 }
 

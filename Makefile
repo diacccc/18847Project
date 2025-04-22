@@ -12,8 +12,8 @@ ifeq ($(ARCH),arm64)
 	LDFLAGS := -lm
 	
 	# OpenMP flags
-	CXXFLAGS += -I/opt/homebrew/opt/libomp/include
-	LDFLAGS += -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib 
+	CXXFLAGS += -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include 
+	LDFLAGS += -lomp -L/opt/homebrew/opt/libomp/lib 
 
 	# OpenBLAS flags
 	CXXFLAGS += -I/opt/homebrew/opt/openblas/include

@@ -93,6 +93,8 @@ public:
     }
     
     // Compare matrices (useful for validation)
+    // Todo: Normalization or double precision
+    
     bool isEqual(const Matrix<T>& other, T tolerance = 1e-5) const {
         if (rows_ != other.rows_ || cols_ != other.cols_) {
             return false;

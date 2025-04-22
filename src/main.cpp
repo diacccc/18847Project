@@ -143,12 +143,27 @@ int main(int argc, char **argv)
     // Setup benchmark
     GemmBenchmark benchmark;
 
+    // Set benchmark parameters
+    size_t runs = args.getArgValueSize("--runs", 10);
+    benchmark.setBenchmarkRuns(runs);
+
+    size_t warmup = args.getArgValueSize("--warmup", 3);
+    benchmark.setWarmupRuns(warmup);
+
+    bool validate = args.getArgValueBool("--validate", true);
+    benchmark.setValidateResults(validate);
+    
     // Check if specific implementation is requested
     if (args.hasArg("--impl"))
     {
         std::string impl_name = args.getArgValue("--impl");
         std::cout << "Using implementation: " << impl_name << std::endl;
         benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation(impl_name)));
+
+        if (validate)
+        {
+            benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation("BLAS")));
+        }
     }
     else
     {
@@ -171,19 +186,7 @@ int main(int argc, char **argv)
 
     benchmark.setMatrixSizes(matrix_sizes);
 
-    // Set benchmark parameters
-    size_t runs = args.getArgValueSize("--runs", 10);
-    benchmark.setBenchmarkRuns(runs);
-
-    size_t warmup = args.getArgValueSize("--warmup", 3);
-    benchmark.setWarmupRuns(warmup);
-
-    bool validate = args.getArgValueBool("--validate", true);
-    benchmark.setValidateResults(validate);
-    if (validate && !args.hasArg("--impl"))
-    {
-        benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation("BLAS")));
-    }
+    
 
     // Run benchmarks
     std::cout << "Running benchmarks with " << runs << " runs and " << warmup << " warmups, validation "

@@ -2,23 +2,38 @@
 
 # Compiler settings
 
-
-
-
 # Check the system architecture
 ARCH := $(shell uname -m)
 
 # Apple Silicon 
 ifeq ($(ARCH),arm64)
 	CXX := clang++
-	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include -I/opt/homebrew/Cellar/simde/0.8.2/include
-	LDFLAGS := -lm -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib -L/opt/homebrew/Cellar/simde/0.8.2/lib
-	BLASFLAGS = -L/opt/homebrew/opt/openblas/lib -I/opt/homebrew/opt/openblas/include -lopenblas
-	# BLASFLAGS = -framework Accelerate -DACCELERATE_NEW_LAPACK 
+	CXXFLAGS := -g -std=c++17 -O3 -Wall -Wextra -march=native 
+	LDFLAGS := -lm
+	
+	# OpenMP flags
+	CXXFLAGS += -I/opt/homebrew/opt/libomp/include
+	LDFLAGS += -Xpreprocessor -fopenmp -lomp -L/opt/homebrew/opt/libomp/lib 
+
+	# OpenBLAS flags
+	CXXFLAGS += -I/opt/homebrew/opt/openblas/include
+	LDFLAGS += -L/opt/homebrew/opt/openblas/lib -lopenblas
+	# LDFLAGS += -framework Accelerate -DACCELERATE_NEW_LAPACK 
+
+	# Rust Metal implementation flags
+	RUST_DIR := src/rust_metal_gemm
+	RUST_TARGET := target/release
+	RUST_LIB := $(RUST_DIR)/$(RUST_TARGET)/librust_metal_gemm.a
+	METAL_FLAGS := -framework Metal -framework Foundation -framework CoreGraphics -framework QuartzCore
+	RUST_INCLUDE := -I$(RUST_DIR)/include
+	
+	# Additional flags for Metal support
+	CXXFLAGS += $(RUST_INCLUDE)
+	LDFLAGS += $(METAL_FLAGS) -L$(RUST_DIR)/$(RUST_TARGET) -lrust_metal_gemm
 else
     # Intel x86_64
     CXX := g++
-	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native 
+	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -fopenmp
 	LDFLAGS := -lm 
     BLASFLAGS = -lopenblas
 endif
@@ -51,19 +66,26 @@ OBJS := $(MAIN_OBJ) $(BENCHMARK_OBJ) $(IMPL_OBJS)
 TARGET := gemm
 
 # Phony targets
-.PHONY: all clean run help
+.PHONY: all clean run help rust format format-check run-single
 
 # Default target
-all: $(TARGET)
+all: rust $(TARGET)
 
 # Help message
 help:
-	@echo "CPU GEMM Optimization Project"
+	@echo "GEMM Optimization Project"
 	@echo "Usage:"
 	@echo "  make        - Build the project"
 	@echo "  make run    - Run the benchmark"
 	@echo "  make clean  - Remove build files"
 	@echo "  make help   - Show this help message"
+
+# Rust Metal implementation
+rust:
+ifeq ($(ARCH),arm64)
+	@echo "Building Rust Metal implementation..."
+	cd $(RUST_DIR) && cargo build --release
+endif
 
 # Build main executable
 $(TARGET): $(OBJS)
@@ -91,14 +113,18 @@ format-check:
 	@clang-format -style=Microsoft --dry-run --Werror $(FORMAT_FILES) \
 		|| (echo "Code formatting check failed. Run 'make format' to fix." && exit 1)
 
-.PHONY: format format-check
+# Run the benchmark
+run-single: $(TARGET)
+	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
 
 # Run the benchmark
 run: $(TARGET)
-	export OMP_NUM_THREADS=4 && \
-	VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET)
+	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 ./$(TARGET)
 
 # Clean build artifacts
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f $(RESULTS_DIR)/*.csv
+ifeq ($(ARCH),arm64)
+	cd $(RUST_DIR) && cargo clean
+endif

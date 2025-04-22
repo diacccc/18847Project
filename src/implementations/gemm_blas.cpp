@@ -12,7 +12,6 @@
 namespace gemm
 {
 
-
 // Implementation of NaiveCpuGemm::execute
 void GemmBLAS::execute(float alpha, const Matrix<float> &A, const Matrix<float> &B, float beta, Matrix<float> &C)
 {

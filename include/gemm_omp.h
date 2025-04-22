@@ -10,7 +10,7 @@
 namespace gemm {
     class GemmOMP : public GemmImplementation {
     public:
-        std::string getName() const override { return "OMP"; }
+        std::string getName() const override { return "cpu_omp"; }
 
         void execute(
             float alpha,

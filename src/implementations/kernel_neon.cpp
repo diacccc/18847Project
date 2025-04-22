@@ -228,8 +228,8 @@ void GemmSIMD::macro_kernel_8x4_sgemm_neon(size_t M, size_t N, size_t K, float a
     packed_B += 4;                                                                                                     \
     k++;
 
-void GemmSIMD::macro_kernel_16x4_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int LDA,
-                                            const float *B, int LDB, float beta, float *C, int LDC)
+void GemmSIMD::macro_kernel_16x4_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int,
+                                            const float *B, int, float, float *C, int LDC)
 {
     const float *packed_A = A;
     const float *packed_B = B;
@@ -430,7 +430,7 @@ void GemmSIMD::macro_kernel_16x8_sgemm_neon(size_t M, size_t N, size_t K, float 
     {
         for (size_t j = 0; j < N; j += 8)
         {
-            float32x4_t a0, a1, a2, a3, a4, a5;
+            float32x4_t a0, a1, a2, a3;
             float32x4_t b0, b1;
             float32x4_t c00, c01, c02, c03, c10, c11, c12, c13, c20, c21, c22, c23, c30, c31, c32, c33, c40, c41, c42,
                 c43, c50, c51, c52, c53, c60, c61, c62, c63, c70, c71, c72, c73;

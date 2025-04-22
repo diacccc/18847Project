@@ -30,6 +30,7 @@ namespace gemm {
                 float *packed_A
             );
 
+
             void packing_A_16_neon(
                 const float* A, 
                 size_t M, size_t K, size_t LDA,
@@ -47,6 +48,7 @@ namespace gemm {
                 size_t K, size_t N, size_t LDB,
                 float *packed_B
             );
+
             
             void macro_kernel_8x4_sgemm_neon(
                 size_t M, size_t N, size_t K, 
@@ -87,7 +89,25 @@ namespace gemm {
 
             #else 
 
-            void macro_kernel_4x1_sgemm_intel(
+            void packing_A_8_intel(
+                const float* A, 
+                size_t M, size_t K, size_t LDA,
+                float *packed_A
+            );
+            void packing_B_8_intel(
+                const float* B, 
+                size_t K, size_t N, size_t LDB,
+                float *packed_B
+            );
+            void macro_kernel_4x4_sgemm_intel(
+                size_t M, size_t N, size_t K, 
+                float alpha, 
+                const float *A, int LDA, 
+                const float *B, int LDB, 
+                float beta, 
+                float *C, int LDC
+            );
+            void macro_kernel_8x4_sgemm_intel(
                 size_t M, size_t N, size_t K, 
                 float alpha, 
                 const float *A, int LDA, 
@@ -96,6 +116,15 @@ namespace gemm {
                 float *C, int LDC
             );
             
+
+            void macro_kernel_8x8_sgemm_intel(
+                size_t M, size_t N, size_t K, 
+                float alpha, 
+                const float *A, int LDA, 
+                const float *B, int LDB, 
+                float beta, 
+                float *C, int LDC
+            );
             #endif
     };
 }

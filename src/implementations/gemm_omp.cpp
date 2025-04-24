@@ -21,16 +21,6 @@
 namespace gemm
 {
 
-//void setup_omp_environment() {
-//    #ifdef _OPENMP
-//        // Explicit core binding for Apple Silicon (M2)
-//        // This binds threads to specific cores 0,1,2,3
-//        setenv("OMP_PLACES", "{0},{1},{2},{3}", 1);
-//        setenv("OMP_PROC_BIND", "spread", 1);
-//        setenv("OMP_NUM_THREADS", "4", 1);
-//    #endif
-//}
-
 // Optimized packing of A with better memory layout for vectorization
 void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib, size_t kb, size_t M, size_t K)
 {
@@ -193,16 +183,18 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    #pragma omp parallel proc_bind(spread) num_threads(8)
+    #pragma omp parallel num_threads(8)
     {
         // Get thread number and total number of threads
         int thread_id = 0;
     	#ifdef _OPENMP
         	thread_id = omp_get_thread_num();
         	int place_num = omp_get_place_num();
+        	// printf("thread id = %d on place: %d\n", thread_id, place_num);
     	#endif
 
        // Calculate NUMA node for this thread
+       // Memory closer to a specific CPU (in the same NUMA node) can be accessed faster
         int numa_node = 0;
         #ifdef _NUMA
         	if (useNuma) {

@@ -1,14 +1,12 @@
-/**
- * @file OMP implementation of GEMM
- * @author Molly Xiao minxiao@andrew.cmu.edu
- * @created 2025-04-12
- */
 #include "../../include/gemm_omp.h"
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+#ifdef _NUMA
+#include <numa.h>
 #endif
 
 // Optimize block sizes for better cache utilization
@@ -22,6 +20,17 @@
 
 namespace gemm
 {
+
+//void setup_omp_environment() {
+//    #ifdef _OPENMP
+//        // Explicit core binding for Apple Silicon (M2)
+//        // This binds threads to specific cores 0,1,2,3
+//        setenv("OMP_PLACES", "{0},{1},{2},{3}", 1);
+//        setenv("OMP_PROC_BIND", "spread", 1);
+//        setenv("OMP_NUM_THREADS", "4", 1);
+//    #endif
+//}
+
 // Optimized packing of A with better memory layout for vectorization
 void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib, size_t kb, size_t M, size_t K)
 {
@@ -36,7 +45,7 @@ void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib,
         for (size_t k = 0; k < K; k++)
         {
             size_t kMR = k * MR;
-#pragma omp simd
+            #pragma omp simd
             for (size_t m = 0; m < m_min; m++)
             {
                 // Packed format optimized for micro-kernel access pattern
@@ -67,7 +76,7 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
         for (size_t n = 0; n < n_min; n++)
         {
             size_t nK = n * K;
-#pragma omp simd
+            #pragma omp simd
             for (size_t k = 0; k < K; k++)
             {
                 // Packed format optimized for micro-kernel access pattern
@@ -89,8 +98,32 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
     }
 }
 
+void* GemmOMP::numaAwareAlloc(size_t size, int node)
+{
+    #ifdef _NUMA
+    	if (useNuma)
+    	{
+        	return numa_alloc_onnode(size, node);
+    	}
+    else
+    #endif
+    return aligned_alloc(64, size);
+}
+
+void GemmOMP::numaAwareFree(void* ptr, size_t size)
+{
+    #ifdef _NUMA
+    	if (useNuma)
+    	{
+        	numa_free(ptr, size);
+        	return;
+    	}
+    #endif
+    free(ptr);
+}
+
 // Highly optimized micro-kernel for MR x NR blocks
-void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
+void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
                   float *__restrict__ C, size_t LDC)
 {
     // Local accumulators for better register reuse
@@ -110,8 +143,8 @@ void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const floa
         float a6 = A[6 + kMR];
         float a7 = A[7 + kMR];
 
-// For each element in the column of A, multiply by row of B
-#pragma omp simd
+        // For each element in the column of A, multiply by row of B
+        #pragma omp simd
         for (size_t j = 0; j < NR; j++)
         {
             float b_val = B[k + j * K];
@@ -126,8 +159,8 @@ void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const floa
         }
     }
 
-// Store results back to C with alpha scaling - fully unrolled
-#pragma omp simd
+    // Store results back to C with alpha scaling - fully unrolled
+    #pragma omp simd
     for (size_t j = 0; j < NR; j++)
     {
         const size_t jLDC = j * LDC;
@@ -160,15 +193,29 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-#pragma omp parallel
+    #pragma omp parallel proc_bind(spread) num_threads(8)
     {
-        // Each thread needs its own workspace - aligned for SIMD operations
-        // Use a larger alignment (64 bytes) for better SIMD performance
-        float *packed_A = (float *)aligned_alloc(64, M_BLOCKING * K_BLOCKING * sizeof(float));
-        float *packed_B = (float *)aligned_alloc(64, K_BLOCKING * N_BLOCKING * sizeof(float));
+        // Get thread number and total number of threads
+        int thread_id = 0;
+    	#ifdef _OPENMP
+        	thread_id = omp_get_thread_num();
+        	int place_num = omp_get_place_num();
+    	#endif
 
-#pragma omp for schedule(dynamic)
-        for (size_t n = 0; n < N; n += N_BLOCKING)
+       // Calculate NUMA node for this thread
+        int numa_node = 0;
+        #ifdef _NUMA
+        	if (useNuma) {
+            	numa_node = thread_id % numa_num_configured_nodes();
+        	}
+        #endif
+
+      	// Each thread needs its own workspace - aligned and NUMA-aware
+      	float *packed_A = (float *)numaAwareAlloc(M_BLOCKING * K_BLOCKING * sizeof(float), numa_node);
+      	float *packed_B = (float *)numaAwareAlloc(K_BLOCKING * N_BLOCKING * sizeof(float), numa_node);
+
+        #pragma omp for schedule(dynamic)
+      	for (size_t n = 0; n < N; n += N_BLOCKING)
         {
             size_t n_size = N - n > N_BLOCKING ? N_BLOCKING : N - n;
 
@@ -224,7 +271,7 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
                                         float sum = 0.0f;
                                         size_t b_offset = b_base + nr * k_size;
 
-#pragma omp simd reduction(+ : sum)
+                                        #pragma omp simd reduction(+ : sum)
                                         for (size_t kk = 0; kk < k_size; kk++)
                                         {
                                             sum += packed_A[a_offset + kk] * packed_B[b_offset + kk];
@@ -241,8 +288,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         }
 
         // Cleanup thread-local memory
-        free(packed_A);
-        free(packed_B);
+        numaAwareFree(packed_A, M_BLOCKING * K_BLOCKING * sizeof(float));
+        numaAwareFree(packed_B, K_BLOCKING * N_BLOCKING * sizeof(float));
     }
 }
 

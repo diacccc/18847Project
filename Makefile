@@ -36,6 +36,10 @@ else
 	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -fopenmp
 	LDFLAGS := -lm 
     BLASFLAGS = -lopenblas
+
+    # Add NUMA support for x86_64
+    CXXFLAGS += -D_NUMA
+    LDFLAGS += -lnuma
 endif
 
 # Directories
@@ -65,8 +69,11 @@ OBJS := $(MAIN_OBJ) $(BENCHMARK_OBJ) $(IMPL_OBJS)
 # Main executable
 TARGET := gemm
 
+# OpenMP environment variables for specific core binding
+OMP_ENV := OMP_PLACES="{0,4},{1,5},{2,6},{3,7}"
+
 # Phony targets
-.PHONY: all clean run help rust format format-check run-single
+.PHONY: all clean run help rust format format-check run-single run-numa
 
 # Default target
 all: rust $(TARGET)
@@ -119,7 +126,13 @@ run-single: $(TARGET)
 
 # Run the benchmark
 run: $(TARGET)
-	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 ./$(TARGET)
+ifeq ($(ARCH),arm64)
+	@echo "NUMA is not applicable to ARM architecture"
+	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 $(OMP_ENV) ./$(TARGET)
+else
+	@echo "Running with NUMA-aware settings"
+	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 $(OMP_ENV) numactl --interleave=all ./$(TARGET)
+endif
 
 # Clean build artifacts
 clean:

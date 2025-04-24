@@ -126,13 +126,8 @@ run-single: $(TARGET)
 
 # Run the benchmark
 run: $(TARGET)
-ifeq ($(ARCH),arm64)
-	@echo "NUMA is not applicable to ARM architecture"
 	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 $(OMP_ENV) ./$(TARGET)
-else
-	@echo "Running with NUMA-aware settings"
-	OMP_NUM_THREADS=4 VECLIB_MAXIMUM_THREADS=4 OPENBLAS_NUM_THREADS=4 $(OMP_ENV) numactl --localalloc ./$(TARGET)
-endif
+
 
 # Clean build artifacts
 clean:

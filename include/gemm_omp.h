@@ -21,11 +21,13 @@ namespace gemm {
         ) override;
 
 	private:
-    	// Helper methods
-    	void micro_kernel_8x8(size_t K, float alpha, const float *A, const float *B, float *C, size_t LDC);
-    	void micro_kernel_4x4(size_t M, size_t N, size_t K, float alpha, const float *A, const float *B, float *C, size_t LDC);
-    };
-}
+		bool useNuma = true;
+    	void* numaAwareAlloc(size_t size, int node);
+    	void numaAwareFree(void* ptr, size_t size);
+    	void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
+				  float *__restrict__ C, size_t LDC);
+	};
+};
 
 #endif //GEMM_OMP_H
 

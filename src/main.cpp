@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 
     bool validate = args.getArgValueBool("--validate", true);
     benchmark.setValidateResults(validate);
-    
+
     // Check if specific implementation is requested
     if (args.hasArg("--impl"))
     {
@@ -185,8 +185,6 @@ int main(int argc, char **argv)
     };
 
     benchmark.setMatrixSizes(matrix_sizes);
-
-    
 
     // Run benchmarks
     std::cout << "Running benchmarks with " << runs << " runs and " << warmup << " warmups, validation "

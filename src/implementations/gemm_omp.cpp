@@ -263,8 +263,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         }
 
         // Cleanup thread-local memory
-        free(packed_A);
-        free(packed_B);
+        numaAwareFree(packed_A, M_BLOCKING * K_BLOCKING * sizeof(float));
+        numaAwareFree(packed_B, K_BLOCKING * N_BLOCKING * sizeof(float));
     }
 }
 

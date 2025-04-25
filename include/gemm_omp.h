@@ -21,7 +21,7 @@ namespace gemm {
         ) override;
 
 	private:
-		bool useNuma = true;
+		// bool useNuma = true;
     	void* numaAwareAlloc(size_t size, int node);
     	void numaAwareFree(void* ptr, size_t size);
     	void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,

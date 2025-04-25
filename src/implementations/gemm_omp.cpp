@@ -186,9 +186,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     #pragma omp parallel num_threads(4)
     {
         // Get thread number and total number of threads
-        int thread_id = 0;
     	#ifdef _OPENMP
-        	thread_id = omp_get_thread_num();
+        	// int thread_id = omp_get_thread_num();
         	// int place_num = omp_get_place_num();
         	// printf("thread id = %d\n", thread_id);
     	#endif
@@ -198,6 +197,7 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         int numa_node = 0;
         #ifdef _NUMA
         	if (useNuma) {
+        		int thread_id = omp_get_thread_num();
             	numa_node = thread_id % numa_num_configured_nodes();
         	}
         #endif
@@ -206,6 +206,7 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
       	float *packed_A = (float *)numaAwareAlloc(M_BLOCKING * K_BLOCKING * sizeof(float), numa_node);
       	float *packed_B = (float *)numaAwareAlloc(K_BLOCKING * N_BLOCKING * sizeof(float), numa_node);
 
+		#pragma omp for schedule(dynamic)
       	for (size_t j = 0; j < N; j += N_BLOCKING)
         {
             size_t nc = N - j > N_BLOCKING ? N_BLOCKING : N - j;

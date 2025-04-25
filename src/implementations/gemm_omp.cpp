@@ -176,37 +176,35 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     assert(C.rows() == M);
     assert(C.cols() == N);
 
-    // Apply beta scaling to C
-    scale(beta, C);
+    // Apply beta scaling with first-touch policy to C
+    // Only use first-touch for matrices smaller than 1024
+    if (M < 1024 || N < 1024) {
+        #pragma omp parallel
+        {
+            #pragma omp for schedule(dynamic, 1)
+            for (size_t j = 0; j < N; j++) {
+                size_t row = j * C.ld();
+                for (size_t i = 0; i < M; i++) {
+                    C.data()[i + row] *= beta;
+                }
+            }
+        }
+    } else {
+        // For larger matrices, use a simpler approach
+        scale(beta, C);
+    }
 
     // Get direct pointer to C data for the final update
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    #pragma omp parallel num_threads(4)
+    #pragma omp parallel num_threads(8)
     {
-        // Get thread number and total number of threads
-    	#ifdef _OPENMP
-        	// int thread_id = omp_get_thread_num();
-        	// int place_num = omp_get_place_num();
-        	// printf("thread id = %d\n", thread_id);
-    	#endif
+        // Each thread allocates and initializes its own workspace with first-touch
+        float *packed_A = (float *)aligned_alloc(64, M_BLOCKING * K_BLOCKING * sizeof(float));
+        float *packed_B = (float *)aligned_alloc(64, K_BLOCKING * N_BLOCKING * sizeof(float));
 
-       // Calculate NUMA node for this thread
-       // Memory closer to a specific CPU (in the same NUMA node) can be accessed faster
-        int numa_node = 0;
-        #ifdef _NUMA
-        	if (useNuma) {
-        		int thread_id = omp_get_thread_num();
-            	numa_node = thread_id % numa_num_configured_nodes();
-        	}
-        #endif
-
-      	// Each thread needs its own workspace - aligned and NUMA-aware
-      	float *packed_A = (float *)numaAwareAlloc(M_BLOCKING * K_BLOCKING * sizeof(float), numa_node);
-      	float *packed_B = (float *)numaAwareAlloc(K_BLOCKING * N_BLOCKING * sizeof(float), numa_node);
-
-		#pragma omp for schedule(dynamic)
+		#pragma omp for schedule(dynamic, 1)
       	for (size_t j = 0; j < N; j += N_BLOCKING)
         {
             size_t nc = N - j > N_BLOCKING ? N_BLOCKING : N - j;
@@ -280,8 +278,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         }
 
         // Cleanup thread-local memory
-        numaAwareFree(packed_A, M_BLOCKING * K_BLOCKING * sizeof(float));
-        numaAwareFree(packed_B, K_BLOCKING * N_BLOCKING * sizeof(float));
+        free(packed_A);
+        free(packed_B);
     }
 }
 

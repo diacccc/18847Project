@@ -183,14 +183,14 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    #pragma omp parallel num_threads(8)
+    #pragma omp parallel num_threads(4)
     {
         // Get thread number and total number of threads
         int thread_id = 0;
     	#ifdef _OPENMP
         	thread_id = omp_get_thread_num();
-        	int place_num = omp_get_place_num();
-        	// printf("thread id = %d on place: %d\n", thread_id, place_num);
+        	// int place_num = omp_get_place_num();
+        	// printf("thread id = %d\n", thread_id);
     	#endif
 
        // Calculate NUMA node for this thread
@@ -206,65 +206,64 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
       	float *packed_A = (float *)numaAwareAlloc(M_BLOCKING * K_BLOCKING * sizeof(float), numa_node);
       	float *packed_B = (float *)numaAwareAlloc(K_BLOCKING * N_BLOCKING * sizeof(float), numa_node);
 
-        #pragma omp for schedule(dynamic)
-      	for (size_t n = 0; n < N; n += N_BLOCKING)
+      	for (size_t j = 0; j < N; j += N_BLOCKING)
         {
-            size_t n_size = N - n > N_BLOCKING ? N_BLOCKING : N - n;
+            size_t nc = N - j > N_BLOCKING ? N_BLOCKING : N - j;
 
             for (size_t k = 0; k < K; k += K_BLOCKING)
             {
-                size_t k_size = K - k > K_BLOCKING ? K_BLOCKING : K - k;
+                size_t kc = K - k > K_BLOCKING ? K_BLOCKING : K - k;
 
                 // Pack B block once and reuse for multiple A blocks
-                pack_block_B(B, packed_B, k, n, k_size, n_size);
+                pack_block_B(B, packed_B, k, j, kc, nc);
 
-                for (size_t m = 0; m < M; m += M_BLOCKING)
+                for (size_t i = 0; i < M; i += M_BLOCKING)
                 {
-                    size_t m_size = M - m > M_BLOCKING ? M_BLOCKING : M - m;
+                    size_t mc = M - i > M_BLOCKING ? M_BLOCKING : M - i;
 
                     // Pack A block
-                    pack_block_A(A, packed_A, m, k, m_size, k_size);
+                    pack_block_A(A, packed_A, i, k, mc, kc);
 
                     // Process packed blocks with micro-kernels
-                    for (size_t nn = 0; nn < n_size; nn += NR)
+                    for (size_t jr = 0; jr < nc; jr += NR)
                     {
-                        size_t n_micro = n_size - nn > NR ? NR : n_size - nn;
-                        size_t c_base_col = n + nn;
+                        size_t n_micro = nc - jr > NR ? NR : nc - jr;
+                        size_t c_base_col = j + jr;
 
-                        for (size_t mm = 0; mm < m_size; mm += MR)
+                        for (size_t ir = 0; ir < mc; ir += MR)
                         {
-                            size_t m_micro = m_size - mm > MR ? MR : m_size - mm;
-                            size_t c_base_row = m + mm;
+                            size_t m_micro = mc - ir > MR ? MR : mc - ir;
+                            size_t c_base_row = i + ir;
 
                             // If we have a full micro-kernel block, use the optimized version
                             if (m_micro == MR && n_micro == NR)
                             {
                                 // Point to the correct positions in packed data
-                                const float *a_micro = packed_A + mm * k_size;
-                                const float *b_micro = packed_B + nn * k_size;
+                                const float *a_micro = packed_A + ir * kc;
+                                const float *b_micro = packed_B + jr * kc;
                                 float *c_micro = C_data + (c_base_row) + (c_base_col)*LDC;
 
-                                // Execute micro-kernel
-                                micro_kernel(k_size, alpha, a_micro, b_micro, c_micro, LDC);
+                                // Execute micro-kernel 8x8
+                                micro_kernel(kc, alpha, a_micro, b_micro, c_micro, LDC);
                             }
                             else
                             {
                                 // move the * ops to the outer loop to reduce overhead, reuse variables
-                                size_t a_base = mm * k_size;
-                                size_t b_base = nn * k_size;
+                                size_t a_base = ir * kc;
+                                size_t b_base = jr * kc;
 
                                 for (size_t mr = 0; mr < m_micro; mr++)
                                 {
-                                    size_t a_offset = (a_base + mr * k_size);
+                                    size_t a_offset = (a_base + mr * kc);
                                     size_t c_row = c_base_row + mr;
 
                                     for (size_t nr = 0; nr < n_micro; nr++)
                                     {
                                         float sum = 0.0f;
-                                        size_t b_offset = b_base + nr * k_size;
+                                        size_t b_offset = b_base + nr * kc;
 
                                         #pragma omp simd reduction(+ : sum)
-                                        for (size_t kk = 0; kk < k_size; kk++)
+                                        for (size_t kk = 0; kk < kc; kk++)
                                         {
                                             sum += packed_A[a_offset + kk] * packed_B[b_offset + kk];
                                         }

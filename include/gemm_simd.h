@@ -22,17 +22,26 @@ namespace gemm {
                 const float *B, int LDB, 
                 float beta, 
                 float *C, int LDC
-            );  
+            );
+            
+            void packing_A_4_neon(
+                const float* A, 
+                float alpha,
+                size_t M, size_t K, size_t LDA,
+                float *packed_A
+            );
 
             void packing_A_8_neon(
                 const float* A, 
+                float alpha,
                 size_t M, size_t K, size_t LDA,
                 float *packed_A
             );
 
 
             void packing_A_16_neon(
-                const float* A, 
+                const float* A,
+                float alpha, 
                 size_t M, size_t K, size_t LDA,
                 float *packed_A
             );

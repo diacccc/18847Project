@@ -13,31 +13,47 @@
 namespace gemm
 {
 
-void GemmSIMD::packing_A_8_neon(const float *A, size_t M, size_t K, size_t LDA, float *packed_A)
+void GemmSIMD::packing_A_4_neon(const float *A, float alpha, size_t M, size_t K, size_t LDA, float *packed_A)
 {
+    float32x4_t valpha = vdupq_n_f32(alpha);
+    float *dst = packed_A;
+    for (size_t i = 0; i < M; i += 4)
+    {
+        for (size_t j = 0; j < K; ++j)
+        {
+            vst1q_f32(dst, vmulq_f32(valpha, vld1q_f32(&A(i, j))));
+            dst += 4;
+        }
+    }
+}
+
+void GemmSIMD::packing_A_8_neon(const float *A, float alpha, size_t M, size_t K, size_t LDA, float *packed_A)
+{
+    float32x4_t valpha = vdupq_n_f32(alpha);
     float *dst = packed_A;
     for (size_t i = 0; i < M; i += 8)
     {
         for (size_t j = 0; j < K; ++j)
         {
-            vst1q_f32(dst, vld1q_f32(&A(i, j)));
-            vst1q_f32(dst + 4, vld1q_f32(&A(i + 4, j)));
+            vst1q_f32(dst, vmulq_f32(valpha, vld1q_f32(&A(i, j))));
+            vst1q_f32(dst + 4, vmulq_f32(valpha, vld1q_f32(&A(i + 4, j))));
             dst += 8;
         }
     }
 }
 
-void GemmSIMD::packing_A_16_neon(const float *A, size_t M, size_t K, size_t LDA, float *packed_A)
+void GemmSIMD::packing_A_16_neon(const float *A, float alpha, size_t M, size_t K, size_t LDA, float *packed_A)
 {
+    float32x4_t valpha = vdupq_n_f32(alpha);
     float *dst = packed_A;
     for (size_t i = 0; i < M; i += 16)
     {
         for (size_t j = 0; j < K; ++j)
         {
-            vst1q_f32(dst, vld1q_f32(&A(i, j)));
-            vst1q_f32(dst + 4, vld1q_f32(&A(i + 4, j)));
-            vst1q_f32(dst + 8, vld1q_f32(&A(i + 8, j)));
-            vst1q_f32(dst + 12, vld1q_f32(&A(i + 12, j)));
+            vst1q_f32(dst, vmulq_f32(valpha, vld1q_f32(&A(i, j))));
+            vst1q_f32(dst + 4, vmulq_f32(valpha, vld1q_f32(&A(i + 4, j))));
+            vst1q_f32(dst + 8, vmulq_f32(valpha, vld1q_f32(&A(i + 8, j))));
+            vst1q_f32(dst + 12, vmulq_f32(valpha, vld1q_f32(&A(i + 12, j))));
             dst += 16;
         }
     }
@@ -102,50 +118,78 @@ void GemmSIMD::packing_B_8_neon(const float *B, size_t K, size_t N, size_t LDB, 
         }
     }
 }
-
-void GemmSIMD::macro_kernel_4x4_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int LDA,
-                                           const float *B, int LDB, float, float *C, int LDC)
+void GemmSIMD::macro_kernel_4x4_sgemm_neon(size_t M, size_t N, size_t K, float, const float *A, int, const float *B,
+                                           int, float, float *C, int LDC)
 {
-    float32x4_t valpha = vdupq_n_f32(alpha);
+
+    const float *packed_A = A;
+    const float *packed_B = B;
     for (size_t i = 0; i < M; i += 4)
     {
         for (size_t j = 0; j < N; j += 4)
         {
-            float32x4_t c0, c1, c2, c3;
-            const float *b_ptr0, *b_ptr1, *b_ptr2, *b_ptr3;
-            b_ptr0 = &B(0, j);
-            b_ptr1 = &B(0, j + 1);
-            b_ptr2 = &B(0, j + 2);
-            b_ptr3 = &B(0, j + 3);
-            c0 = vdupq_n_f32(0);
-            c1 = vdupq_n_f32(0);
-            c2 = vdupq_n_f32(0);
-            c3 = vdupq_n_f32(0);
+            asm volatile("movi v4.4s, #0                \n" // 将v4初始化为0
+                         "movi v5.4s, #0                \n" // 将v5初始化为0
+                         "movi v6.4s, #0                \n" // 将v6初始化为0
+                         "movi v7.4s, #0                \n" // 将v7初始化为0
+                         :
+                         :
+                         : "v4", "v5", "v6", "v7");
+
+            packed_A = A + i * K;
+            packed_B = B + j * K;
 
             for (size_t k = 0; k < K; ++k)
             {
-                float32x4_t a = vmulq_f32(valpha, vld1q_f32(&A(i, k)));
-                float32x4_t b0 = vld1q_dup_f32(b_ptr0++);
-                float32x4_t b1 = vld1q_dup_f32(b_ptr1++);
-                float32x4_t b2 = vld1q_dup_f32(b_ptr2++);
-                float32x4_t b3 = vld1q_dup_f32(b_ptr3++);
+                // float32x4_t a = vmulq_f32(valpha, vld1q_f32(packed_A));
+                // float32x4_t b = vld1q_f32(packed_B);
 
-                c0 = vfmaq_f32(c0, a, b0);
-                c1 = vfmaq_f32(c1, a, b1);
-                c2 = vfmaq_f32(c2, a, b2);
-                c3 = vfmaq_f32(c3, a, b3);
+                // c0 = vfmaq_laneq_f32(c0, a, b, 0);
+                // c1 = vfmaq_laneq_f32(c1, a, b, 1);
+                // c2 = vfmaq_laneq_f32(c2, a, b, 2);
+                // c3 = vfmaq_laneq_f32(c3, a, b, 3);
+                // packed_A += 4;
+                // packed_B += 4;
+                asm volatile("ldr q1, [%0]                \n"
+
+                             "ld1 {v2.4s}, [%1]           \n"
+
+                             "fmla v4.4s, v1.4s, v2.s[0]  \n"
+                             "fmla v5.4s, v1.4s, v2.s[1]  \n"
+                             "fmla v6.4s, v1.4s, v2.s[2]  \n"
+                             "fmla v7.4s, v1.4s, v2.s[3]  \n"
+
+                             "add %0, %0, #16             \n"
+                             "add %1, %1, #16             \n"
+
+                             : "+r"(packed_A), "+r"(packed_B)
+                             :
+                             : "v0", "v1", "v2", "v4", "v5", "v6", "v7", "memory");
             }
-            vst1q_f32(&C(i, j), vaddq_f32(c0, vld1q_f32(&C(i, j))));
-            vst1q_f32(&C(i, j + 1), vaddq_f32(c1, vld1q_f32(&C(i, j + 1))));
-            vst1q_f32(&C(i, j + 2), vaddq_f32(c2, vld1q_f32(&C(i, j + 2))));
-            vst1q_f32(&C(i, j + 3), vaddq_f32(c3, vld1q_f32(&C(i, j + 3))));
+            asm volatile("ldr q0, [%0]                \n"
+                         "ldr q1, [%1]                \n"
+                         "ldr q2, [%2]                \n"
+                         "ldr q3, [%3]                \n"
+
+                         "fadd v0.4s, v0.4s, v4.4s    \n"
+                         "fadd v1.4s, v1.4s, v5.4s    \n"
+                         "fadd v2.4s, v2.4s, v6.4s    \n"
+                         "fadd v3.4s, v3.4s, v7.4s    \n"
+
+                         "str q0, [%0]                \n"
+                         "str q1, [%1]                \n"
+                         "str q2, [%2]                \n"
+                         "str q3, [%3]                \n"
+                         :
+                         : "r"(&C(i, j)), "r"(&C(i, j + 1)), "r"(&C(i, j + 2)), "r"(&C(i, j + 3))
+                         : "v0", "v1", "v2", "v3", "memory");
         }
     }
 }
 
 #define KERNEL_8x4_SGEMM_NEON                                                                                          \
-    a0 = vmulq_f32(valpha, vld1q_f32(packed_A));                                                                       \
-    a1 = vmulq_f32(valpha, vld1q_f32(packed_A + 4));                                                                   \
+    a0 = vld1q_f32(packed_A);                                                                                          \
+    a1 = vld1q_f32(packed_A + 4);                                                                                      \
     b = vld1q_f32(packed_B);                                                                                           \
     c00 = vfmaq_laneq_f32(c00, a0, b, 0);                                                                              \
     c01 = vfmaq_laneq_f32(c01, a1, b, 0);                                                                              \
@@ -159,13 +203,12 @@ void GemmSIMD::macro_kernel_4x4_sgemm_neon(size_t M, size_t N, size_t K, float a
     packed_B += 4;                                                                                                     \
     k++;
 
-void GemmSIMD::macro_kernel_8x4_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int,
-                                           const float *B, int, float, float *C, int LDC)
+void GemmSIMD::macro_kernel_8x4_sgemm_neon(size_t M, size_t N, size_t K, float, const float *A, int, const float *B,
+                                           int, float, float *C, int LDC)
 {
     const float *packed_A = A;
     const float *packed_B = B;
 
-    float32x4_t valpha = vdupq_n_f32(alpha);
     for (size_t i = 0; i < M; i += 8)
     {
         for (size_t j = 0; j < N; j += 4)
@@ -203,10 +246,10 @@ void GemmSIMD::macro_kernel_8x4_sgemm_neon(size_t M, size_t N, size_t K, float a
 }
 
 #define KERNEL_16x4_SGEMM_NEON                                                                                         \
-    a0 = vmulq_f32(valpha, vld1q_f32(packed_A));                                                                       \
-    a1 = vmulq_f32(valpha, vld1q_f32(packed_A + 4));                                                                   \
-    a2 = vmulq_f32(valpha, vld1q_f32(packed_A + 8));                                                                   \
-    a3 = vmulq_f32(valpha, vld1q_f32(packed_A + 12));                                                                  \
+    a0 = vld1q_f32(packed_A);                                                                                          \
+    a1 = vld1q_f32(packed_A + 4);                                                                                      \
+    a2 = vld1q_f32(packed_A + 8);                                                                                      \
+    a3 = vld1q_f32(packed_A + 12);                                                                                     \
     b = vld1q_f32(packed_B);                                                                                           \
     c00 = vfmaq_laneq_f32(c00, a0, b, 0);                                                                              \
     c01 = vfmaq_laneq_f32(c01, a1, b, 0);                                                                              \
@@ -228,13 +271,12 @@ void GemmSIMD::macro_kernel_8x4_sgemm_neon(size_t M, size_t N, size_t K, float a
     packed_B += 4;                                                                                                     \
     k++;
 
-void GemmSIMD::macro_kernel_16x4_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int,
-                                            const float *B, int, float, float *C, int LDC)
+void GemmSIMD::macro_kernel_16x4_sgemm_neon(size_t M, size_t N, size_t K, float, const float *A, int, const float *B,
+                                            int, float, float *C, int LDC)
 {
     const float *packed_A = A;
     const float *packed_B = B;
 
-    float32x4_t valpha = vdupq_n_f32(alpha);
     for (size_t i = 0; i < M; i += 16)
     {
         for (size_t j = 0; j < N; j += 4)
@@ -292,8 +334,8 @@ void GemmSIMD::macro_kernel_16x4_sgemm_neon(size_t M, size_t N, size_t K, float 
 }
 
 #define KERNEL_8x8_SGEMM_NEON                                                                                          \
-    a0 = vmulq_f32(valpha, vld1q_f32(packed_A));                                                                       \
-    a1 = vmulq_f32(valpha, vld1q_f32(packed_A + 4));                                                                   \
+    a0 = vld1q_f32(packed_A);                                                                                          \
+    a1 = vld1q_f32(packed_A + 4);                                                                                      \
     b0 = vld1q_f32(packed_B);                                                                                          \
     b1 = vld1q_f32(packed_B + 4);                                                                                      \
     c00 = vfmaq_laneq_f32(c00, a0, b0, 0);                                                                             \
@@ -316,13 +358,12 @@ void GemmSIMD::macro_kernel_16x4_sgemm_neon(size_t M, size_t N, size_t K, float 
     packed_B += 8;                                                                                                     \
     k++;
 
-void GemmSIMD::macro_kernel_8x8_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int,
-                                           const float *B, int, float, float *C, int LDC)
+void GemmSIMD::macro_kernel_8x8_sgemm_neon(size_t M, size_t N, size_t K, float, const float *A, int, const float *B,
+                                           int, float, float *C, int LDC)
 {
     const float *packed_A = A;
     const float *packed_B = B;
 
-    float32x4_t valpha = vdupq_n_f32(alpha);
     for (size_t i = 0; i < M; i += 8)
     {
         for (size_t j = 0; j < N; j += 8)
@@ -377,10 +418,10 @@ void GemmSIMD::macro_kernel_8x8_sgemm_neon(size_t M, size_t N, size_t K, float a
 }
 
 #define KERNEL_16x8_SGEMM_NEON                                                                                         \
-    a0 = vmulq_f32(valpha, vld1q_f32(packed_A));                                                                       \
-    a1 = vmulq_f32(valpha, vld1q_f32(packed_A + 4));                                                                   \
-    a2 = vmulq_f32(valpha, vld1q_f32(packed_A + 8));                                                                   \
-    a3 = vmulq_f32(valpha, vld1q_f32(packed_A + 12));                                                                  \
+    a0 = vld1q_f32(packed_A);                                                                                          \
+    a1 = vld1q_f32(packed_A + 4);                                                                                      \
+    a2 = vld1q_f32(packed_A + 8);                                                                                      \
+    a3 = vld1q_f32(packed_A + 12);                                                                                     \
     b0 = vld1q_f32(packed_B);                                                                                          \
     b1 = vld1q_f32(packed_B + 4);                                                                                      \
     c00 = vfmaq_laneq_f32(c00, a0, b0, 0);                                                                             \
@@ -419,13 +460,12 @@ void GemmSIMD::macro_kernel_8x8_sgemm_neon(size_t M, size_t N, size_t K, float a
     packed_B += 8;                                                                                                     \
     k++;
 
-void GemmSIMD::macro_kernel_16x8_sgemm_neon(size_t M, size_t N, size_t K, float alpha, const float *A, int,
-                                            const float *B, int, float, float *C, int LDC)
+void GemmSIMD::macro_kernel_16x8_sgemm_neon(size_t M, size_t N, size_t K, float, const float *A, int, const float *B,
+                                            int, float, float *C, int LDC)
 {
     const float *packed_A = A;
     const float *packed_B = B;
 
-    float32x4_t valpha = vdupq_n_f32(alpha);
     for (size_t i = 0; i < M; i += 16)
     {
         for (size_t j = 0; j < N; j += 8)

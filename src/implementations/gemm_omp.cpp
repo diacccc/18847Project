@@ -176,23 +176,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     assert(C.rows() == M);
     assert(C.cols() == N);
 
-    // Apply beta scaling with first-touch policy to C
-    // Only use first-touch for matrices smaller than 1024
-    if (M < 1024 || N < 1024) {
-        #pragma omp parallel
-        {
-            #pragma omp for schedule(dynamic, 1)
-            for (size_t j = 0; j < N; j++) {
-                size_t row = j * C.ld();
-                for (size_t i = 0; i < M; i++) {
-                    C.data()[i + row] *= beta;
-                }
-            }
-        }
-    } else {
-        // For larger matrices, use a simpler approach
-        scale(beta, C);
-    }
+    // Apply beta scaling to C(without first touch)
+    scale(beta, C);
 
     // Get direct pointer to C data for the final update
     float *C_data = C.data();

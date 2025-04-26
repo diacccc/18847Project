@@ -38,8 +38,8 @@ else
     BLASFLAGS = -lopenblas
 
     # Add NUMA support for x86_64
-    CXXFLAGS += -D_NUMA
-    LDFLAGS += -lnuma
+    # CXXFLAGS += -D_NUMA
+    # LDFLAGS += -lnuma
 endif
 
 # Directories

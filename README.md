@@ -33,7 +33,6 @@ Project/
 │   │   └── gemm_metal.cpp        # Metal GPU implementation
 │   └── rust_metal_gemm/          # Rust-based Metal implementation
 │       ├── Cargo.toml            # Rust project configuration
-│       ├── build.rs              # Rust build script
 │       ├── src/                  # Rust source code
 │       │   ├── lib.rs            # Rust library implementation
 │       │   └── gemm_kernel.metal # Metal shader code

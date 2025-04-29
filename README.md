@@ -15,32 +15,32 @@ The General Matrix Multiplication (GEMM) is a fundamental operation in linear al
 
 ```
 Project/
-├── Makefile                # Main GNU makefile
-├── README.md               # Project documentation
-├── include/                # Header files
-│   ├── gemm.h              # GEMM interface definition
-│   ├── types.h             # Matrix class definition
-│   ├── benchmark.h         # Benchmarking utilities
-│   └── common.h            # Common utilities
-├── src/                    # Source files
-│   ├── main.cpp            # Main application entry
-│   ├── benchmark.cpp       # Benchmarking implementation
-│   ├── implementations/    # GEMM implementations
-│   │   ├── gemm_naive.cpp  # Naive implementation
-│   │   ├── gemm_simd.cpp   # SIMD-optimized implementation
-│   │   ├── gemm_omp.cpp    # OpenMP implementation
-│   │   ├── gemm_blas.cpp   # BLAS wrapper implementation
-│   │   └── gemm_metal.cpp  # Metal GPU implementation
-│   └── rust_metal_gemm/    # Rust-based Metal implementation
-│       ├── Cargo.toml      # Rust project configuration
-│       ├── build.rs        # Rust build script
-│       ├── src/            # Rust source code
-│       │   ├── lib.rs      # Rust library implementation
+├── Makefile                      # Main GNU makefile
+├── README.md                     # Project documentation
+├── include/                      # Header files
+│   ├── gemm.h                    # GEMM interface definition
+│   ├── types.h                   # Matrix class definition
+│   ├── benchmark.h               # Benchmarking utilities
+│   └── common.h                  # Common utilities
+├── src/                          # Source files
+│   ├── main.cpp                  # Main application entry
+│   ├── benchmark.cpp             # Benchmarking implementation
+│   ├── implementations/          # GEMM implementations
+│   │   ├── gemm_naive.cpp        # Naive implementation
+│   │   ├── gemm_simd.cpp         # SIMD-optimized implementation
+│   │   ├── gemm_omp.cpp          # OpenMP implementation
+│   │   ├── gemm_blas.cpp         # BLAS wrapper implementation
+│   │   └── gemm_metal.cpp        # Metal GPU implementation
+│   └── rust_metal_gemm/          # Rust-based Metal implementation
+│       ├── Cargo.toml            # Rust project configuration
+│       ├── build.rs              # Rust build script
+│       ├── src/                  # Rust source code
+│       │   ├── lib.rs            # Rust library implementation
 │       │   └── gemm_kernel.metal # Metal shader code
-│       └── include/        # C/C++ headers for Rust FFI
-│           └── metal_gemm.h # C interface for Metal implementation
-├── build/                  # Build artifacts (created by make)
-└── results/                # Benchmark results (created by the program)
+│       └── include/              # C/C++ headers for Rust FFI
+│           └── metal_gemm.h      # C interface for Metal implementation
+├── build/                        # Build artifacts (created by make)
+└── results/                      # Benchmark results (created by the program)
 ```
 
 ## Requirements

@@ -30,7 +30,7 @@
    - Thread affinity and NUMA awareness
 
 ## Same Techniques but using OMP
-<img src="images/img_1.png" width="400" alt="OpenMP optimization techniques">
+<img src="./images/img_1.png" width="400" alt="OpenMP optimization techniques">
 
 ### Blocking
 1. **Blocking for Cache Efficiency**
@@ -71,7 +71,7 @@
 1. **Matrix Packing**
     - Pack matrices into contiguous blocks to improve cache locality
     - Use aligned memory allocation for packed matrices
-    - ![img.png](images/img.png)
+    - ![img.png](./images/img.png)
 
 2. **My implementation:**
    ```c++
@@ -100,7 +100,7 @@
 1. **Micro-Kernel Implementation**
    - Spilt blocks into a micro-kernel for the innermost loop
    - Use SIMD instructions for vectorized operations
-   - ![img_3.png](images/img_3.png)
+   - ![img_3.png](./images/img_3.png)
    
 2. **My implementation:**
    ```c++
@@ -121,7 +121,7 @@
    - Unroll loops for vectorized operations
    - Load data into registers and perform computations
    - Apply `#pragma omp simd` to innermost loops
-   - ![img_2.png](images/img_2.png):
+   - ![img_2.png](./images/img_2.png):
 
 2. **My implementation:**
    ```c++
@@ -151,11 +151,11 @@
     - Parallelism within cores
       - better to parallelize the jr loop
       -  one of the threads will load the elements into the L1 cache, and all other threads will use it before it is evicted.
-      ![img_4.png](images/img_4.png)
+      ![img_4.png](./images/img_4.png)
     - Parallelism between cores
       - better to parallelize the ic loop, as each core has its own L2 cache. 
       - However, if parallelism between cores is only attained by this loop, performance will be poor when M is small
-      ![img_5.png](images/img_5.png)
+      ![img_5.png](./images/img_5.png)
    ```c++
    #pragma omp parallel for collapse(2)
    for (size_t i = 0; i < M; i += M_BLOCKING) {

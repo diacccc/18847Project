@@ -5,3 +5,4 @@ results
 src/rust_metal_gemm/target
 src/rust_metal_gemm/Cargo.lock
 results.csv
+.DS_Store

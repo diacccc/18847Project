@@ -35,7 +35,7 @@ void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib,
         for (size_t k = 0; k < K; k++)
         {
             size_t kMR = k * MR;
-            #pragma omp simd
+#pragma omp simd
             for (size_t m = 0; m < m_min; m++)
             {
                 // Packed format optimized for micro-kernel access pattern
@@ -66,7 +66,7 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
         for (size_t n = 0; n < n_min; n++)
         {
             size_t nK = n * K;
-            #pragma omp simd
+#pragma omp simd
             for (size_t k = 0; k < K; k++)
             {
                 // Packed format optimized for micro-kernel access pattern
@@ -88,33 +88,33 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
     }
 }
 
-void* GemmOMP::numaAwareAlloc(size_t size, int)
+void *GemmOMP::numaAwareAlloc(size_t size, int)
 {
-    #ifdef _NUMA
-    	if (useNuma)
-    	{
-        	return numa_alloc_onnode(size, node);
-    	}
+#ifdef _NUMA
+    if (useNuma)
+    {
+        return numa_alloc_onnode(size, node);
+    }
     else
-    #endif
-    return aligned_alloc(64, size);
+#endif
+        return aligned_alloc(64, size);
 }
 
-void GemmOMP::numaAwareFree(void* ptr, size_t)
+void GemmOMP::numaAwareFree(void *ptr, size_t)
 {
-    #ifdef _NUMA
-    	if (useNuma)
-    	{
-        	numa_free(ptr, size);
-        	return;
-    	}
-    #endif
+#ifdef _NUMA
+    if (useNuma)
+    {
+        numa_free(ptr, size);
+        return;
+    }
+#endif
     free(ptr);
 }
 
 // Highly optimized micro-kernel for MR x NR blocks
 void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
-                  float *__restrict__ C, size_t LDC)
+                           float *__restrict__ C, size_t LDC)
 {
     // Local accumulators for better register reuse
     float c[MR][NR] = {{0}};
@@ -133,8 +133,8 @@ void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, c
         float a6 = A[6 + kMR];
         float a7 = A[7 + kMR];
 
-        // For each element in the column of A, multiply by row of B
-        #pragma omp simd
+// For each element in the column of A, multiply by row of B
+#pragma omp simd
         for (size_t j = 0; j < NR; j++)
         {
             float b_val = B[k + j * K];
@@ -149,8 +149,8 @@ void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, c
         }
     }
 
-    // Store results back to C with alpha scaling - fully unrolled
-    #pragma omp simd
+// Store results back to C with alpha scaling - fully unrolled
+#pragma omp simd
     for (size_t j = 0; j < NR; j++)
     {
         const size_t jLDC = j * LDC;
@@ -183,14 +183,14 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    #pragma omp parallel
+#pragma omp parallel
     {
         // Each thread allocates and initializes its own workspace with first-touch
         float *packed_A = (float *)aligned_alloc(64, M_BLOCKING * K_BLOCKING * sizeof(float));
         float *packed_B = (float *)aligned_alloc(64, K_BLOCKING * N_BLOCKING * sizeof(float));
 
-		#pragma omp for schedule(dynamic, 1)
-      	for (size_t j = 0; j < N; j += N_BLOCKING)
+#pragma omp for schedule(dynamic, 1)
+        for (size_t j = 0; j < N; j += N_BLOCKING)
         {
             size_t nc = N - j > N_BLOCKING ? N_BLOCKING : N - j;
 
@@ -246,7 +246,7 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
                                         float sum = 0.0f;
                                         size_t b_offset = b_base + nr * kc;
 
-                                        #pragma omp simd reduction(+ : sum)
+#pragma omp simd reduction(+ : sum)
                                         for (size_t kk = 0; kk < kc; kk++)
                                         {
                                             sum += packed_A[a_offset + kk] * packed_B[b_offset + kk];

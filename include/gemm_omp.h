@@ -21,9 +21,8 @@ namespace gemm {
         ) override;
 
 	private:
-		// bool useNuma = true;
-    	void* numaAwareAlloc(size_t size, int node);
-    	void numaAwareFree(void* ptr, size_t size);
+		void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib, size_t kb, size_t M, size_t K);
+		void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb, size_t jb, size_t K, size_t N);
     	void micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
 				  float *__restrict__ C, size_t LDC);
 	};

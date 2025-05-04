@@ -22,7 +22,7 @@ namespace gemm
 {
 
 // Optimized packing of A with better memory layout for vectorization
-void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib, size_t kb, size_t M, size_t K)
+void GemmOMP::pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib, size_t kb, size_t M, size_t K)
 {
     const float *__restrict__ A_data = A.data();
     const size_t LDA = A.ld();
@@ -53,7 +53,7 @@ void pack_block_A(const Matrix<float> &A, float *__restrict__ packed, size_t ib,
 }
 
 // Optimized packing of B with better memory layout for vectorization
-void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb, size_t jb, size_t K, size_t N)
+void GemmOMP::pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb, size_t jb, size_t K, size_t N)
 {
     const float *__restrict__ B_data = B.data();
     const size_t LDB = B.ld();

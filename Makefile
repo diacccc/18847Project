@@ -78,7 +78,7 @@ TARGET := gemm
 OMP_ENV := OMP_PLACES="{0,4},{1,5},{2,6},{3,7}" OMP_PROC_BIND="spread"
 
 # Phony targets
-.PHONY: all clean run help rust format format-check run-single run-numa
+.PHONY: all clean run help rust format format-check run-single doxygen-config doxygen docs
 
 # Default target
 all: rust $(TARGET)
@@ -124,6 +124,39 @@ format-check:
 	@echo "Checking code formatting..."
 	@clang-format -style=Microsoft --dry-run --Werror $(FORMAT_FILES) \
 		|| (echo "Code formatting check failed. Run 'make format' to fix." && exit 1)
+
+
+# Doxygen configuration
+DOXYGEN := doxygen
+DOXYFILE := Doxyfile
+DOXYGEN_OUTPUT_DIR := docs
+
+# Source directories to document
+SRC_DIRS := include src/implementations src/rust_metal_gemm/src
+
+# Doxygen targets
+doxygen-config:
+	@echo "Generating Doxygen configuration file..."
+	@$(DOXYGEN) -g $(DOXYFILE)
+	@sed -i.bak 's|OUTPUT_DIRECTORY *=.*|OUTPUT_DIRECTORY = $(DOXYGEN_OUTPUT_DIR)|' $(DOXYFILE)
+	@sed -i.bak 's|INPUT *=.*|INPUT = $(SRC_DIRS)|' $(DOXYFILE)
+	@sed -i.bak 's|RECURSIVE *=.*|RECURSIVE = YES|' $(DOXYFILE)
+	@sed -i.bak 's|EXTRACT_ALL *=.*|EXTRACT_ALL = YES|' $(DOXYFILE)
+	@sed -i.bak 's|PROJECT_NAME *=.*|PROJECT_NAME = "GEMM Optimization Project"|' $(DOXYFILE)
+	@echo "Created and configured $(DOXYFILE)."
+
+doxygen: 
+	@echo "Checking for Doxyfile..."
+	@if [ ! -f $(DOXYFILE) ]; then \
+		echo "Doxyfile not found. Creating default configuration..."; \
+		$(MAKE) doxygen-config; \
+	fi
+	@echo "Generating documentation with Doxygen..."
+	@mkdir -p $(DOXYGEN_OUTPUT_DIR)
+	@$(DOXYGEN) $(DOXYFILE)
+	@echo "Documentation generated in $(DOXYGEN_OUTPUT_DIR) directory."
+
+docs: doxygen-config doxygen
 
 # Run the benchmark
 run-single: $(TARGET)

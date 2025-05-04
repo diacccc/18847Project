@@ -5,3 +5,6 @@ results
 src/rust_metal_gemm/target
 src/rust_metal_gemm/Cargo.lock
 .DS_Store
+Doxyfile
+Doxyfile.bak
+docs

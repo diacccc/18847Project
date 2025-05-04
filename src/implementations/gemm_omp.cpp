@@ -183,7 +183,7 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    #pragma omp parallel num_threads(8)
+    #pragma omp parallel
     {
         // Each thread allocates and initializes its own workspace with first-touch
         float *packed_A = (float *)aligned_alloc(64, M_BLOCKING * K_BLOCKING * sizeof(float));

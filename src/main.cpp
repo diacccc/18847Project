@@ -262,10 +262,9 @@ int main(int argc, char **argv)
     printBenchmarkResults(results);
 
     // Save results to file if requested
+    std::string output_file = args.getArgValue("--output", "./results/results.csv");
     if (args.hasArg("--output"))
     {
-        std::string output_file = args.getArgValue("--output", "./results/results.csv");
-        std::cerr << output_file << std::endl;
         if (benchmark.saveResults(output_file, results))
         {
             std::cout << "Results saved to: " << output_file << std::endl;

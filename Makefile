@@ -1,6 +1,8 @@
-# GNUmakefile for CPU GEMM Optimization Project
+# GNUmakefile for GEMM Optimization Project
 
-# Compiler settings
+OMP_PATH := /opt/homebrew/opt/libomp
+MKL_PATH := /opt/intel/oneapi/mkl/latest
+BLAS_PATH := /opt/homebrew/opt/openblas
 
 # Check the system architecture
 ARCH := $(shell uname -m)
@@ -12,12 +14,12 @@ ifeq ($(ARCH),arm64)
 	LDFLAGS := -lm
 	
 	# OpenMP flags
-	CXXFLAGS += -Xpreprocessor -fopenmp -I/opt/homebrew/opt/libomp/include 
-	LDFLAGS += -lomp -L/opt/homebrew/opt/libomp/lib 
+	CXXFLAGS += -Xpreprocessor -fopenmp -I$(OMP_PATH)/include 
+	LDFLAGS += -lomp -L$(OMP_PATH)/lib 
 
 	# OpenBLAS flags
-	CXXFLAGS += -I/opt/homebrew/opt/openblas/include
-	LDFLAGS += -L/opt/homebrew/opt/openblas/lib -lopenblas
+	CXXFLAGS += -I$(BLAS_PATH)/include
+	LDFLAGS += -L$(BLAS_PATH)/lib -lopenblas
 	# LDFLAGS += -framework Accelerate -DACCELERATE_NEW_LAPACK 
 
 	# Rust Metal implementation flags
@@ -36,9 +38,8 @@ else
 	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -fopenmp
 	LDFLAGS := -lm 
     # MKL LP64, sequential linking (common setup)
-	MKLROOT ?= /opt/intel/oneapi/mkl/latest
-	BLASFLAGS = -I$(MKLROOT)/include
-	LDFLAGS += -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+	BLASFLAGS = -I$(MKL_PATH)/include
+	LDFLAGS += -L$(MKL_PATH)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
 
 
     # Add NUMA support for x86_64
@@ -126,11 +127,11 @@ format-check:
 
 # Run the benchmark
 run-single: $(TARGET)
-	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET) --output results.csv
+	LD_LIBRARY_PATH=$(MKL_PATH)/lib/intel64:$$LD_LIBRARY_PATH OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 MKL_NUM_THREADS=1 ./$(TARGET) --output results.csv
 
 # Run the benchmark
 run: $(TARGET)
-	OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output results.csv
+	LD_LIBRARY_PATH=$(MKL_PATH)/lib/intel64:$$LD_LIBRARY_PATH OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output results.csv
 
 
 # Clean build artifacts

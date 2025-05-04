@@ -11,7 +11,7 @@
 
 // Optimize block sizes for better cache utilization
 #define M_BLOCKING 96
-#define N_BLOCKING 256
+#define N_BLOCKING 192
 #define K_BLOCKING 192
 
 // Micro-kernel sizes for register blocking
@@ -90,7 +90,7 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
 
 // Highly optimized micro-kernel for MR x NR blocks
 void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
-                  float *__restrict__ C, size_t LDC)
+                           float *__restrict__ C, size_t LDC)
 {
     // Local accumulators for better register reuse
     float c[MR][NR] = {{0}};

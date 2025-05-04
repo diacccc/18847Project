@@ -16,12 +16,12 @@
 #define B(i, j) B[(i) + (j) * LDB]
 #define C(i, j) C[(i) + (j) * LDC]
 
-#define M_BLOCKING 32
-#define N_BLOCKING 64
-#define K_BLOCKING 64
-// #define M_BLOCKING 96
-// #define N_BLOCKING 256
-// #define K_BLOCKING 192
+// #define M_BLOCKING 32
+// #define N_BLOCKING 64
+// #define K_BLOCKING 64
+#define M_BLOCKING 96
+#define N_BLOCKING 256
+#define K_BLOCKING 192
 
 namespace gemm
 {

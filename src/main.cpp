@@ -118,12 +118,12 @@ class CommandLineParser
     void printHelp() const
     {
         std::cout << "GEMM Benchmark Usage:" << std::endl;
+        std::cout << "  --size <n>          Maximum size multiplier (default: 32), max size = n * 128" << std::endl;
+        std::cout << "  --validate <bool>   Validate results (default: 1)" << std::endl;
+        std::cout << "  --output <file>     Output file for results (default: results/results.csv)" << std::endl;
         std::cout << "  --runs <n>          Number of benchmark runs (default: 10)" << std::endl;
         std::cout << "  --warmup <n>        Number of warmup runs (default: 3)" << std::endl;
-        std::cout << "  --validate <bool>   Validate results (default: true)" << std::endl;
         std::cout << "  --impl <name>       Use specific implementation (default: all)" << std::endl;
-        std::cout << "  --output <file>     Output file for results (default: none)" << std::endl;
-        std::cout << "  --sizes <file>      Input file with matrix sizes (default: use hardcoded sizes)" << std::endl;
         std::cout << "  --help              Display this help message" << std::endl;
     }
 };
@@ -153,16 +153,63 @@ int main(int argc, char **argv)
     bool validate = args.getArgValueBool("--validate", true);
     benchmark.setValidateResults(validate);
 
-    // Check if specific implementation is requested
+    // Check if specific implementation(s) are requested
     if (args.hasArg("--impl"))
     {
-        std::string impl_name = args.getArgValue("--impl");
-        std::cout << "Using implementation: " << impl_name << std::endl;
-        benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation(impl_name)));
-
-        if (validate)
-        {
-            benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation("BLAS")));
+        std::string impl_string = args.getArgValue("--impl");
+        std::vector<std::string> requested_impls;
+        
+        // Parse comma-separated implementation names
+        size_t pos = 0;
+        std::string token;
+        while ((pos = impl_string.find(",")) != std::string::npos) {
+            token = impl_string.substr(0, pos);
+            // Trim whitespace
+            token.erase(0, token.find_first_not_of(" \t"));
+            token.erase(token.find_last_not_of(" \t") + 1);
+            
+            if (!token.empty()) {
+                requested_impls.push_back(token);
+            }
+            impl_string.erase(0, pos + 1);
+        }
+        
+        // Add the last implementation name
+        impl_string.erase(0, impl_string.find_first_not_of(" \t"));
+        impl_string.erase(impl_string.find_last_not_of(" \t") + 1);
+        if (!impl_string.empty()) {
+            requested_impls.push_back(impl_string);
+        }
+        
+        // Add each requested implementation
+        std::cout << "Using implementations: ";
+        for (const auto& impl_name : requested_impls) {
+            std::cout << impl_name << " ";
+            auto impl = createImplementation(impl_name);
+            if (impl) {
+                benchmark.addImplementation(std::unique_ptr<GemmImplementation>(impl));
+            } else {
+                std::cerr << "\nWarning: Implementation '" << impl_name << "' not found." << std::endl;
+            }
+        }
+        std::cout << std::endl;
+        
+        // Add reference implementation for validation if not already added
+        if (validate) {
+            bool has_ref = false;
+            std::string ref_impl = "BLAS"; // Default reference implementation
+            
+            for (const auto& impl_name : requested_impls) {
+                if (impl_name == ref_impl) {
+                    has_ref = true;
+                    break;
+                }
+            }
+            
+            if (!has_ref) {
+                std::cout << "Adding reference implementation (" << ref_impl << ") for validation." << std::endl;
+                benchmark.addImplementation(std::unique_ptr<GemmImplementation>(createImplementation(ref_impl)));
+            }
         }
     }
     else
@@ -175,18 +222,33 @@ int main(int argc, char **argv)
 
     matrix_sizes = {
         // Small matrices
-        {128, 128, 128},    {256, 256, 256},    {384, 384, 384},    {512, 512, 512},
-        {640, 640, 640},    {768, 768, 768},    {896, 896, 896},    {1024, 1024, 1024},
-        {1152, 1152, 1152}, {1280, 1280, 1280}, {1408, 1408, 1408}, {1536, 1536, 1536},
-        {1664, 1664, 1664}, {1792, 1792, 1792}, {1920, 1920, 1920}, {2048, 2048, 2048},
-        {2176, 2176, 2176}, {2304, 2304, 2304}, {2432, 2432, 2432}, {2560, 2560, 2560},
-        {2688, 2688, 2688}, {2816, 2816, 2816}, {2944, 2944, 2944}, {3072, 3072, 3072},
-        {3200, 3200, 3200}, {3328, 3328, 3328}, {3456, 3456, 3456}, {3584, 3584, 3584},
-        {3712, 3712, 3712}, {3840, 3840, 3840}, {3968, 3968, 3968}, {4096, 4096, 4096},
+        {128, 128, 128},    {256, 256, 256},    {384, 384, 384},    {512, 512, 512},    {640, 640, 640},
+        {768, 768, 768},    {896, 896, 896},    {1024, 1024, 1024}, {1152, 1152, 1152}, {1280, 1280, 1280},
+        {1408, 1408, 1408}, {1536, 1536, 1536}, {1664, 1664, 1664}, {1792, 1792, 1792}, {1920, 1920, 1920},
+        {2048, 2048, 2048}, {2176, 2176, 2176}, {2304, 2304, 2304}, {2432, 2432, 2432}, {2560, 2560, 2560},
+        {2688, 2688, 2688}, {2816, 2816, 2816}, {2944, 2944, 2944}, {3072, 3072, 3072}, {3200, 3200, 3200},
+        {3328, 3328, 3328}, {3456, 3456, 3456}, {3584, 3584, 3584}, {3712, 3712, 3712}, {3840, 3840, 3840},
+        {3968, 3968, 3968}, {4096, 4096, 4096},
         // // Non-square matrices
         // {1024, 2048, 512},
         // {2048, 1024, 3072}
     };
+
+    // Then in the main function, after setting matrix_sizes, add:
+    size_t max_size_multiplier = 32;
+    if (args.hasArg("--size")) {
+        max_size_multiplier = args.getArgValueSize("--size", 32);
+    }
+    size_t max_size = max_size_multiplier * 128;
+
+    // Filter the matrix sizes to include only those below the maximum
+    std::vector<std::tuple<size_t, size_t, size_t>> filtered_sizes;
+    for (const auto& size : matrix_sizes) {
+        if (std::get<0>(size) <= max_size) {
+            filtered_sizes.push_back(size);
+        }
+    }
+    matrix_sizes = filtered_sizes;
 
     benchmark.setMatrixSizes(matrix_sizes);
 
@@ -200,13 +262,15 @@ int main(int argc, char **argv)
     printBenchmarkResults(results);
 
     // Save results to file if requested
-    if (args.hasArg("--output")) {
-        std::string output_file = args.getArgValue("--output",
-        "./results/results.csv"); 
-        std::cerr << output_file << std::endl;
-        if(benchmark.saveResults(output_file, results)) {
+    std::string output_file = args.getArgValue("--output", "./results/results.csv");
+    if (args.hasArg("--output"))
+    {
+        if (benchmark.saveResults(output_file, results))
+        {
             std::cout << "Results saved to: " << output_file << std::endl;
-        } else {
+        }
+        else
+        {
             std::cerr << "Error saving results to file." << std::endl;
             return 1;
         }

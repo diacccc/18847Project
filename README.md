@@ -44,7 +44,10 @@ Project/
 
 ## Requirements
 
+### Makefile
+
 ### For macOS/Apple Silicon
+
 ```shell
 # Install required packages
 brew install clang-format  # For code formatting
@@ -62,6 +65,15 @@ rustc --version
 # Install required packages
 sudo apt-get install -y clang-format libopenblas-dev libomp-dev
 ```
+
+Please modify the following variables in `Makefile` to configure your environment. 
+```makefile
+OMP_PATH := /opt/homebrew/opt/libomp
+MKL_PATH := /opt/intel/oneapi/mkl/latest
+BLAS_PATH := /opt/homebrew/opt/openblas
+```
+
+
 
 ## Building the Project
 

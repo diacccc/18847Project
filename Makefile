@@ -35,7 +35,11 @@ else
     CXX := g++
 	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -fopenmp
 	LDFLAGS := -lm 
-    BLASFLAGS = -lopenblas
+    # MKL LP64, sequential linking (common setup)
+	MKLROOT ?= /opt/intel/oneapi/mkl/latest
+	BLASFLAGS = -I$(MKLROOT)/include
+	LDFLAGS += -L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+
 
     # Add NUMA support for x86_64
     # CXXFLAGS += -D_NUMA
@@ -122,11 +126,11 @@ format-check:
 
 # Run the benchmark
 run-single: $(TARGET)
-	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET) --output results_single.csv
+	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 MKL_NUM_THREADS=1 ./$(TARGET) --output results_single.csv
 
 # Run the benchmark
 run: $(TARGET)
-	OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 OPENBLAS_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output results.csv
+	OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output results.csv
 
 
 # Clean build artifacts

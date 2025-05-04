@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 df = pd.read_csv('results.csv')
 
 # Create a figure
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(20, 12))
 
 # Plot GFLOPS for each implementation
 implementations = df['Implementation'].unique()

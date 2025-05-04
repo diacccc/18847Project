@@ -11,7 +11,7 @@
 
 // Optimize block sizes for better cache utilization
 #define M_BLOCKING 96
-#define N_BLOCKING 192
+#define N_BLOCKING 256
 #define K_BLOCKING 192
 
 // Micro-kernel sizes for register blocking
@@ -88,30 +88,6 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
     }
 }
 
-void* GemmOMP::numaAwareAlloc(size_t size, int node)
-{
-    #ifdef _NUMA
-    	if (useNuma)
-    	{
-        	return numa_alloc_onnode(size, node);
-    	}
-    else
-    #endif
-    return aligned_alloc(64, size);
-}
-
-void GemmOMP::numaAwareFree(void* ptr, size_t size)
-{
-    #ifdef _NUMA
-    	if (useNuma)
-    	{
-        	numa_free(ptr, size);
-        	return;
-    	}
-    #endif
-    free(ptr);
-}
-
 // Highly optimized micro-kernel for MR x NR blocks
 void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, const float *__restrict__ B,
                   float *__restrict__ C, size_t LDC)
@@ -119,10 +95,13 @@ void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, c
     // Local accumulators for better register reuse
     float c[MR][NR] = {{0}};
 
-
     // Main computation loop - this is the most critical part for performance
     for (size_t k = 0; k < K; k++)
     {
+		if (k + 1 < K) {
+    		__builtin_prefetch(&A[(k+1) * MR], 0, 3);
+    		__builtin_prefetch(&B[k+1], 0, 3);
+		}
         size_t kMR = k * MR;
         // Load a single column of A (MR elements)
         float a0 = A[0 + kMR];
@@ -184,11 +163,6 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    size_t thread_num = 8;
-	if (M <= 1024) {
-		thread_num = 12;
-	}
-
 	// update block size
 	size_t m_block = M_BLOCKING;
 	size_t n_block = N_BLOCKING;
@@ -204,14 +178,13 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         k_block = 64;
     }
 
-
-    #pragma omp parallel num_threads(thread_num)
+    #pragma omp parallel
     {
         // Each thread allocates and initializes its own workspace with first-touch
-        float *packed_A = (float *)aligned_alloc(32, m_block * k_block * sizeof(float));
-        float *packed_B = (float *)aligned_alloc(32, k_block * n_block * sizeof(float));
+        float *packed_A = (float *)aligned_alloc(64, m_block * k_block * sizeof(float));
+        float *packed_B = (float *)aligned_alloc(64, k_block * n_block * sizeof(float));
 
-		#pragma omp for collapse(2) schedule(dynamic, 1)
+		#pragma omp for schedule(dynamic, 1)
       	for (size_t j = 0; j < N; j += n_block)
         {
             size_t nc = N - j > n_block ? n_block : N - j;
@@ -285,8 +258,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         }
 
         // Cleanup thread-local memory
-        numaAwareFree(packed_A, m_block * k_block * sizeof(float));
-        numaAwareFree(packed_B, k_block * n_block * sizeof(float));
+        free(packed_A);
+        free(packed_B);
     }
 }
 

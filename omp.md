@@ -217,9 +217,10 @@ We need to minimize the number of cache misses and maximize the use of registers
 
 2. **Explicit Implementation**
    ```c++
-    //Fill with random values in range [min, max]
+    // allocated on the physical memory closest to the CPU core that first writes to them
+    // Fill with random values in range [min, max]
     void randomize(T min = 0, T max = 1) {
-    #pragma omp parallel num_threads(8)
+    #pragma omp parallel
     {
         std::mt19937 gen(std::random_device{}() + omp_get_thread_num());
         std::uniform_real_distribution<T> dist(min, max);
@@ -253,6 +254,7 @@ We need to minimize the number of cache misses and maximize the use of registers
 3. **MacOS Affinity Settings**
    - QoS (Quality of Service) - bind threads to performance or efficiency cores
    ```c++
+   // use for pthread
      int qos = QOS_CLASS_USER_INITIATED;
      scheduler[i].coreAffinity = kCoreAffinity_OnlyPerformance;
      

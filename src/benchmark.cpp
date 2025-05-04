@@ -94,7 +94,7 @@ std::vector<BenchmarkResult> GemmBenchmark::runAll()
         std::tie(M, N, K) = size;
 
         std::cout << "Benchmarking matrix size: " << M << "x" << N << "x" << K << std::endl;
-        const size_t LD = 3000;
+        const size_t LD = 6000;
         // Create matrices for this benchmark
         Matrix<float> A(M, K, LD);
         Matrix<float> B(K, N, LD);

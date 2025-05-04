@@ -195,17 +195,18 @@ int main(int argc, char **argv)
     std::cout << "\nBenchmark Results:" << std::endl;
     printBenchmarkResults(results);
 
-    // // Save results to file if requested
-    // if (args.hasArg("--output")) {
-    //     std::string output_file = args.getArgValue("--output",
-    //     "results/benchmark_results.csv"); if
-    //     (benchmark.saveResults(output_file, results)) {
-    //         std::cout << "Results saved to: " << output_file << std::endl;
-    //     } else {
-    //         std::cerr << "Error saving results to file." << std::endl;
-    //         return 1;
-    //     }
-    // }
+    // Save results to file if requested
+    if (args.hasArg("--output")) {
+        std::string output_file = args.getArgValue("--output",
+        "./results/results.csv"); 
+        std::cerr << output_file << std::endl;
+        if(benchmark.saveResults(output_file, results)) {
+            std::cout << "Results saved to: " << output_file << std::endl;
+        } else {
+            std::cerr << "Error saving results to file." << std::endl;
+            return 1;
+        }
+    }
 
     return 0;
 }

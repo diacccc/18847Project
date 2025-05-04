@@ -9,6 +9,11 @@
 
 - 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
 
+- Intel i7 
+  - Single-thread<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_intel.png" alt="gemm_gflops" style="zoom:67%;" />
+
+- 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_intel_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
+
 ## Single-Core Step-by-Step Performance Comparison
 
 ### Naive implementation
@@ -70,6 +75,30 @@ vst1q_f32(&C(i, j), vaddq_f32(c0, vld1q_f32(&C(i, j))));
 vst1q_f32(&C(i, j + 1), vaddq_f32(c1, vld1q_f32(&C(i, j + 1))));
 vst1q_f32(&C(i, j + 2), vaddq_f32(c2, vld1q_f32(&C(i, j + 2))));
 vst1q_f32(&C(i, j + 3), vaddq_f32(c3, vld1q_f32(&C(i, j + 3))));
+```
+
+```cpp
+__m128 c0 = _mm_setzero_ps();
+            __m128 c1 = _mm_setzero_ps();
+            __m128 c2 = _mm_setzero_ps();
+            __m128 c3 = _mm_setzero_ps();
+            for (size_t k = 0; k < K; ++k)
+            {
+                __m128 a = _mm_mul_ps(valpha, _mm_loadu_ps(&A(i, k)));
+                __m128 b0 = _mm_set1_ps(B(k, j));
+                __m128 b1 = _mm_set1_ps(B(k, j + 1));
+                __m128 b2 = _mm_set1_ps(B(k, j + 2));
+                __m128 b3 = _mm_set1_ps(B(k, j + 3));
+
+                c0 = _mm_fmadd_ps(a, b0, c0);
+                c1 = _mm_fmadd_ps(a, b1, c1);
+                c2 = _mm_fmadd_ps(a, b2, c2);
+                c3 = _mm_fmadd_ps(a, b3, c3);
+            }
+            _mm_storeu_ps(&C(i, j), _mm_add_ps(c0, _mm_loadu_ps(&C(i, j))));
+            _mm_storeu_ps(&C(i, j + 1), _mm_add_ps(c1, _mm_loadu_ps(&C(i, j + 1))));
+            _mm_storeu_ps(&C(i, j + 2), _mm_add_ps(c2, _mm_loadu_ps(&C(i, j + 2))));
+            _mm_storeu_ps(&C(i, j + 3), _mm_add_ps(c3, _mm_loadu_ps(&C(i, j + 3))));
 ```
 
 <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_trick2.png" alt="gemm_trick2" style="zoom:67%;" />

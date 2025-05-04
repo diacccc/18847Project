@@ -36,19 +36,20 @@ public:
     
     // Fill with random values in range [min, max]
     void randomize(T min = 0, T max = 1) {
-        #pragma omp parallel num_threads(8)
-        {
-            std::mt19937 gen(std::random_device{}() + omp_get_thread_num());
-            std::uniform_real_distribution<T> dist(min, max);
+    #pragma omp parallel num_threads(8)
+    {
+        std::mt19937 gen(std::random_device{}() + omp_get_thread_num());
+        std::uniform_real_distribution<T> dist(min, max);
 
-            #pragma omp for schedule(static)
+        // thread initializes memory
+        #pragma omp for schedule(static)
+        for (size_t j = 0; j < cols_; ++j) {
             for (size_t i = 0; i < rows_; ++i) {
-                for (size_t j = 0; j < cols_; ++j) {
-                    at(i, j) = dist(gen);
-                }
+                at(i, j) = dist(gen);
             }
         }
     }
+}
     
     // Fill with a specific value
     void fill(T value) {

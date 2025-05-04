@@ -217,21 +217,21 @@ We need to minimize the number of cache misses and maximize the use of registers
 
 2. **Explicit Implementation**
    ```c++
-   // Explicit first touch initialization
-   #pragma omp parallel for schedule(static)
-   for (int i = 0; i < M; i++) {
-       for (int j = 0; j < N; j++) {
-           C[i*ldc + j] = 0.0f;  // Initial value + first touch
-       }
-   }
-   #pragma omp simd
-   for (size_t i = 0; i < M_BLOCKING * K_BLOCKING; i++) {
-     packed_A[i] = 0.0f;
-   }
-   #pragma omp simd
-   for (size_t i = 0; i < K_BLOCKING * N_BLOCKING; i++) {
-     packed_B[i] = 0.0f;
-   }
+    //Fill with random values in range [min, max]
+    void randomize(T min = 0, T max = 1) {
+    #pragma omp parallel num_threads(8)
+    {
+        std::mt19937 gen(std::random_device{}() + omp_get_thread_num());
+        std::uniform_real_distribution<T> dist(min, max);
+
+        // thread initializes memory
+        #pragma omp for schedule(static)
+        for (size_t j = 0; j < cols_; ++j) {
+            for (size_t i = 0; i < rows_; ++i) {
+                at(i, j) = dist(gen);
+            }
+        }
+    }
    ```
 
 ### Thread Affinity

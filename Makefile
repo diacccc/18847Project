@@ -33,13 +33,14 @@ ifeq ($(ARCH),arm64)
 	CXXFLAGS += $(RUST_INCLUDE)
 	LDFLAGS += $(METAL_FLAGS) -L$(RUST_DIR)/$(RUST_TARGET) -lrust_metal_gemm
 else
-    # Intel x86_64
+	# Intel x86_64
     CXX := g++
 	CXXFLAGS := -std=c++17 -O3 -Wall -Wextra -march=native -fopenmp
 	LDFLAGS := -lm 
+	LDFLAGS += -liomp5
     # MKL LP64, sequential linking (common setup)
 	BLASFLAGS = -I$(MKL_PATH)/include
-	LDFLAGS += -L$(MKL_PATH)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl
+	LDFLAGS += -L$(MKL_PATH)/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -lpthread -lm -ldl
 
 
     # Add NUMA support for x86_64
@@ -164,7 +165,7 @@ run-single: $(TARGET)
 
 # Run the benchmark
 run: $(TARGET)
-	LD_LIBRARY_PATH=$(MKL_PATH)/lib/intel64:$$LD_LIBRARY_PATH OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output
+	LD_LIBRARY_PATH=$(MKL_PATH)/lib/intel64:$$LD_LIBRARY_PATH MKL_DYNAMIC=FALSE OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output
 
 
 # Clean build artifacts

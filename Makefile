@@ -126,11 +126,7 @@ format-check:
 
 # Run the benchmark
 run-single: $(TARGET)
-<<<<<<< HEAD
-	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 MKL_NUM_THREADS=1 ./$(TARGET) --output results_single.csv
-=======
-	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET) --output results.csv --validate 1
->>>>>>> b94c21d (new test)
+	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET) --output results.csv
 
 # Run the benchmark
 run: $(TARGET)

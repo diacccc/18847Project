@@ -1,8 +1,10 @@
 # GEMM Optimization
 
-Diac Liu <diacl@andrew.cmu.edu> @diacccc
-Min Xiao <minxiao@andrew.cmu.edu> @Echo-minn
-Gaven Wang <jiayuw3@andrew.cmu.edu> @GavenWang1014
+- Diac Liu <diacl@andrew.cmu.edu> @diacccc
+
+- Min Xiao <minxiao@andrew.cmu.edu> @Echo-minn
+
+- Gaven Wang <jiayuw3@andrew.cmu.edu> @GavenWang1014
 
 ## Experimental Results
 

@@ -6,13 +6,11 @@
 
 - Apple M4 pro 
   - Single-thread<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops.png" alt="gemm_gflops" style="zoom:67%;" />
-
-- 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
+  - 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
 
 - Intel i7 
   - Single-thread<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_intel.png" alt="gemm_gflops" style="zoom:67%;" />
-
-- 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_intel_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
+  - 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_intel_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
 
 ## Single-Core Step-by-Step Performance Comparison
 

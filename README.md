@@ -46,6 +46,13 @@ Project/
 
 ### Makefile
 
+Please modify the following variables in `Makefile` to configure your environment. 
+```makefile
+OMP_PATH := /opt/homebrew/opt/libomp
+MKL_PATH := /opt/intel/oneapi/mkl/latest
+BLAS_PATH := /opt/homebrew/opt/openblas
+```
+
 ### For macOS/Apple Silicon
 
 ```shell
@@ -65,14 +72,6 @@ rustc --version
 # Install required packages
 sudo apt-get install -y clang-format libopenblas-dev libomp-dev
 ```
-
-Please modify the following variables in `Makefile` to configure your environment. 
-```makefile
-OMP_PATH := /opt/homebrew/opt/libomp
-MKL_PATH := /opt/intel/oneapi/mkl/latest
-BLAS_PATH := /opt/homebrew/opt/openblas
-```
-
 
 
 ## Building the Project
@@ -101,6 +100,13 @@ Custom thread configuration:
 OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 OPENBLAS_NUM_THREADS=8 ./gemm
 ```
 
+Custom matrix size and implementations: 
+```shell
+./gemm -h # print help info
+
+./gemm --size 8 --impl cpu_simd,gpu_metal # size=8 means that the max matrix size is set as 8 * 128 = 1024 
+```
+
 ## Implemented Optimizations
 
 1. **Naive CPU Implementation** - Basic triple-loop matrix multiplication
@@ -115,9 +121,9 @@ The performance of the GEMM implementations can be tuned via several parameters:
 
 - **Block Sizes**: The blocking parameters in `gemm_simd.cpp` and `gemm_omp.cpp` can be adjusted:
   ```cpp
-  #define M_BLOCKING 32   // Block size for M dimension
-  #define N_BLOCKING 64   // Block size for N dimension
-  #define K_BLOCKING 64   // Block size for K dimension
+  #define M_BLOCKING 96   // Block size for M dimension
+  #define N_BLOCKING 256   // Block size for N dimension
+  #define K_BLOCKING 192   // Block size for K dimension
   ```
 
 - **Thread Count**: The number of OpenMP threads can be set via environment variables:

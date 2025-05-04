@@ -123,6 +123,7 @@ class CommandLineParser
         std::cout << "  --output <file>     Output file for results (default: results/results.csv)" << std::endl;
         std::cout << "  --runs <n>          Number of benchmark runs (default: 10)" << std::endl;
         std::cout << "  --warmup <n>        Number of warmup runs (default: 3)" << std::endl;
+        std::cout << "  --tolerance <val>   Tolerance for validation (default: 1e-3)" << std::endl;
         std::cout << "  --impl <name>       Use specific implementation (default: all)" << std::endl;
         std::cout << "  --help              Display this help message" << std::endl;
     }
@@ -152,6 +153,9 @@ int main(int argc, char **argv)
 
     bool validate = args.getArgValueBool("--validate", true);
     benchmark.setValidateResults(validate);
+
+    std::string tolerance = args.getArgValue("--tolerance", "1e-3");
+    benchmark.setTolerance(std::stof(tolerance));
 
     // Check if specific implementation(s) are requested
     if (args.hasArg("--impl"))

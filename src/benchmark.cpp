@@ -202,7 +202,7 @@ BenchmarkResult GemmBenchmark::benchmarkImplementation(GemmImplementation *impl,
     // Validate result if a reference is provided
     if (reference_result)
     {
-        result.validated = C.isEqual(*reference_result, 1e-4f);
+        result.validated = C.isEqual(*reference_result, tolerance_);
 
         if (!result.validated)
         {

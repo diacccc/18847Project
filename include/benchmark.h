@@ -58,6 +58,9 @@ public:
     
     // Set whether to validate results (default: true)
     void setValidateResults(bool validate) { validate_results_ = validate; }
+
+    // Set tolerance for validation (default: 1e-3)
+    void setTolerance(float tolerance) { tolerance_ = tolerance; }
     
     // Set reference implementation for validation (default: naive CPU)
     void setReferenceImplementation(const std::string& name) { reference_impl_ = name; }
@@ -75,6 +78,7 @@ private:
     size_t benchmark_runs_ = 10;
     bool validate_results_ = true;
     std::string reference_impl_ = "BLAS";
+    float tolerance_ = 1e-3f;
     
     // Benchmark a single implementation with given matrix sizes
     BenchmarkResult benchmarkImplementation(

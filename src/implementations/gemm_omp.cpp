@@ -88,7 +88,7 @@ void pack_block_B(const Matrix<float> &B, float *__restrict__ packed, size_t kb,
     }
 }
 
-void* GemmOMP::numaAwareAlloc(size_t size, int node)
+void* GemmOMP::numaAwareAlloc(size_t size, int)
 {
     #ifdef _NUMA
     	if (useNuma)
@@ -100,7 +100,7 @@ void* GemmOMP::numaAwareAlloc(size_t size, int node)
     return aligned_alloc(64, size);
 }
 
-void GemmOMP::numaAwareFree(void* ptr, size_t size)
+void GemmOMP::numaAwareFree(void* ptr, size_t)
 {
     #ifdef _NUMA
     	if (useNuma)

@@ -1,5 +1,7 @@
 #pragma once
-
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include <vector>
 #include <memory>
 #include <iostream>
@@ -34,13 +36,16 @@ public:
     
     // Fill with random values in range [min, max]
     void randomize(T min = 0, T max = 1) {
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_real_distribution<T> dist(min, max);
-        
-        for (size_t i = 0; i < rows_; ++i) {
-            for (size_t j = 0; j < cols_; ++j) {
-                at(i, j) = dist(gen);
+        #pragma omp parallel num_threads(8)
+        {
+            std::mt19937 gen(std::random_device{}() + omp_get_thread_num());
+            std::uniform_real_distribution<T> dist(min, max);
+
+            #pragma omp for schedule(static)
+            for (size_t i = 0; i < rows_; ++i) {
+                for (size_t j = 0; j < cols_; ++j) {
+                    at(i, j) = dist(gen);
+                }
             }
         }
     }

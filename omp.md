@@ -19,6 +19,8 @@
 
 
 ## Basic Optimization Techniques
+Make our instruction independent and parallelize the code as much as possible. Take advantage of the memory hierarchy,
+We need to minimize the number of cache misses and maximize the use of registers.
 1. **Algorithm Level:**
    - Block matrix multiplication for cache efficiency 
    - Packing matrices for better memory access patterns 
@@ -34,8 +36,9 @@
 
 ### Blocking
 1. **Blocking for Cache Efficiency**
-    - Divide matrices into smaller blocks to fit into cache, load them into cache
-    - Process each block independently to reduce cache misses
+    - Divide matrices into smaller blocks to fit into cache
+    - Reduce the number of memory accesses by a factor of:
+    - ![./images/img_7.png](./images/img_7.png)
 2. **My implementation:**
    ```c++
    // Block size definitions
@@ -58,11 +61,11 @@
         k_block = 64;
     }
 
-   // Loop over blocks
+   // Loop over blocks, j,k,i
    for (size_t j = 0; j < N; j += n_block) {
        for (size_t k = 0; k < K; k += k_block) {
            for (size_t i = 0; i < M; i += m_block) {
-               // Process block (i,j)
+               // Process block
            }
        }
    }
@@ -99,7 +102,6 @@
 ### Micro-Kernel
 1. **Micro-Kernel Implementation**
    - Spilt blocks into a micro-kernel for the innermost loop
-   - Use SIMD instructions for vectorized operations
    - ![img_3.png](./images/img_3.png)
    
 2. **My implementation:**
@@ -109,7 +111,9 @@
    #define NR 8
    
    for (size_t jr = 0; jr < nc; jr += NR) {
+   size_t n_micro = nc - jr > NR ? NR : nc - jr;
      for (size_t ir = 0; ir < mc; ir += MR) {
+        size_t m_micro = mc - ir > MR ? MR : mc - ir;
         // Execute micro-kernel 8x8
         micro_kernel();
      }
@@ -118,10 +122,10 @@
 
 ### Loop Unrolling
 1. **Loop Unrolling**
-   - Unroll loops for vectorized operations
+   - Unroll loops for SIMD
    - Load data into registers and perform computations
    - Apply `#pragma omp simd` to innermost loops
-   - ![img_2.png](./images/img_2.png):
+   - <img src="./images/img_2.png" width="400" alt="Loop unrolling diagram">
 
 2. **My implementation:**
    ```c++
@@ -139,6 +143,17 @@
       c[6][j] += a6 * b_val;
       c[7][j] += a7 * b_val;
    }
+   
+   // vecrorized version
+   float a_vals[8] = {a0, a1, a2, a3, a4, a5, a6, a7};
+   // Process in vector blocks where possible
+   #pragma omp simd
+   for (size_t j = 0; j < NR; j++) {
+       float b_val = B[k + j * K];
+       for (int m = 0; m < 8; m++) {
+          c[m][j] += a_vals[m] * b_val;
+      }
+   }
    ```
 
 ## Multithreading (Parallel) Considerations for OpenMP GEMM
@@ -150,12 +165,14 @@
         - Use `collapse` clause to parallelize nested loops
     - Parallelism within cores
       - better to parallelize the jr loop
+      - ![img_4.png](./images/img_4.png)
       -  one of the threads will load the elements into the L1 cache, and all other threads will use it before it is evicted.
-      ![img_4.png](./images/img_4.png)
+      - ![./images/img_9.png](./images/img_9.png)
     - Parallelism between cores
-      - better to parallelize the ic loop, as each core has its own L2 cache. 
+      - better to parallelize the ic loop, as each core has its own L2 cache.
+      - ![img_5.png](./images/img_5.png)
+      - ![./images/img_8.png](./images/img_8.png)
       - However, if parallelism between cores is only attained by this loop, performance will be poor when M is small
-      ![img_5.png](./images/img_5.png)
    ```c++
    #pragma omp parallel for collapse(2)
    for (size_t i = 0; i < M; i += M_BLOCKING) {
@@ -216,11 +233,6 @@
      packed_B[i] = 0.0f;
    }
    ```
-
-3. **Common Pitfalls**
-    - Avoid single-threaded initialization before parallel computation
-    - Ensure consistent thread scheduling between initialization and computation
-    - Be aware of memory allocation functions that might zero memory (breaking first-touch)
 
 ### Thread Affinity
 1. **Thread Affinity Settings with OpenMP(Not for Mac)**
@@ -290,7 +302,8 @@
     numaAwareFree(packed_A, M_BLOCKING * K_BLOCKING * sizeof(float));
     numaAwareFree(packed_B, K_BLOCKING * N_BLOCKING * sizeof(float));
    ```
-
+## Performance Results
+![./images/img_1.png](images/img_6.png)
 
 ## References
 - https://siboehm.com/articles/22/Fast-MMM-on-CPU

@@ -119,6 +119,7 @@ void GemmOMP::micro_kernel(size_t K, float alpha, const float *__restrict__ A, c
     // Local accumulators for better register reuse
     float c[MR][NR] = {{0}};
 
+
     // Main computation loop - this is the most critical part for performance
     for (size_t k = 0; k < K; k++)
     {
@@ -183,27 +184,48 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
     float *C_data = C.data();
     const size_t LDC = C.ld();
 
-    #pragma omp parallel num_threads(8)
+    size_t thread_num = 8;
+	if (M <= 1024) {
+		thread_num = 12;
+	}
+
+	// update block size
+	size_t m_block = M_BLOCKING;
+	size_t n_block = N_BLOCKING;
+	size_t k_block = K_BLOCKING;
+	if (M > 1024) {
+        m_block = 64;
+        n_block = 128;
+        k_block = 128;
+	}
+	if (M >= 1664) {
+        m_block = 32;
+        n_block = 64;
+        k_block = 64;
+    }
+
+
+    #pragma omp parallel num_threads(thread_num)
     {
         // Each thread allocates and initializes its own workspace with first-touch
-        float *packed_A = (float *)aligned_alloc(64, M_BLOCKING * K_BLOCKING * sizeof(float));
-        float *packed_B = (float *)aligned_alloc(64, K_BLOCKING * N_BLOCKING * sizeof(float));
+        float *packed_A = (float *)aligned_alloc(32, m_block * k_block * sizeof(float));
+        float *packed_B = (float *)aligned_alloc(32, k_block * n_block * sizeof(float));
 
-		#pragma omp for schedule(dynamic, 1)
-      	for (size_t j = 0; j < N; j += N_BLOCKING)
+		#pragma omp for collapse(2) schedule(dynamic, 1)
+      	for (size_t j = 0; j < N; j += n_block)
         {
-            size_t nc = N - j > N_BLOCKING ? N_BLOCKING : N - j;
+            size_t nc = N - j > n_block ? n_block : N - j;
 
-            for (size_t k = 0; k < K; k += K_BLOCKING)
+            for (size_t k = 0; k < K; k += k_block)
             {
-                size_t kc = K - k > K_BLOCKING ? K_BLOCKING : K - k;
+                size_t kc = K - k > k_block ? k_block : K - k;
 
                 // Pack B block once and reuse for multiple A blocks
                 pack_block_B(B, packed_B, k, j, kc, nc);
 
-                for (size_t i = 0; i < M; i += M_BLOCKING)
+                for (size_t i = 0; i < M; i += m_block)
                 {
-                    size_t mc = M - i > M_BLOCKING ? M_BLOCKING : M - i;
+                    size_t mc = M - i > m_block ? m_block : M - i;
 
                     // Pack A block
                     pack_block_A(A, packed_A, i, k, mc, kc);
@@ -263,8 +285,8 @@ void GemmOMP::execute(float alpha, const Matrix<float> &A, const Matrix<float> &
         }
 
         // Cleanup thread-local memory
-        numaAwareFree(packed_A, M_BLOCKING * K_BLOCKING * sizeof(float));
-        numaAwareFree(packed_B, K_BLOCKING * N_BLOCKING * sizeof(float));
+        numaAwareFree(packed_A, m_block * k_block * sizeof(float));
+        numaAwareFree(packed_B, k_block * n_block * sizeof(float));
     }
 }
 

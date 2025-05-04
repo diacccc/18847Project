@@ -5,9 +5,9 @@
 ### Arm Neon
 
 - Apple M4 pro 
-  - Single-thread<img src="/Users/diac/Desktop/18847/gemm_gflops.png" alt="gemm_gflops" style="zoom:67%;" />
+  - Single-thread<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops.png" alt="gemm_gflops" style="zoom:67%;" />
 
-- 8-thread <img src="/Users/diac/Desktop/18847/gemm_gflops_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
+- 8-thread <img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_gflops_multi.png" alt="gemm_gflops_multi" style="zoom:67%;" />
 
 ## Single-Core Step-by-Step Performance Comparison
 
@@ -41,7 +41,7 @@ for (size_t k = 0; k < K; ++k)
 C.at(i, j) += sum;
 ```
 
-<img src="/Users/diac/Desktop/18847/gemm_trick1.png" alt="gemm_trick1" style="zoom: 67%;" />
+<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_trick1.png" alt="gemm_trick1" style="zoom: 67%;" />
 
 ### Trick 2 - Loop Unrolling & SIMD (4x4 Kernel)
 
@@ -72,7 +72,7 @@ vst1q_f32(&C(i, j + 2), vaddq_f32(c2, vld1q_f32(&C(i, j + 2))));
 vst1q_f32(&C(i, j + 3), vaddq_f32(c3, vld1q_f32(&C(i, j + 3))));
 ```
 
-<img src="/Users/diac/Desktop/18847/gemm_trick2.png" alt="gemm_trick2" style="zoom:67%;" />
+<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_trick2.png" alt="gemm_trick2" style="zoom:67%;" />
 
 ### Trick 3 - Cache Blocking
 
@@ -95,10 +95,10 @@ for (n_count = 0; n_count < N; n_count += N_BLOCKING)
 }
 ```
 
-<img src="/Users/diac/Desktop/18847/gemm_trick3.png" alt="gemm_trick3" style="zoom:67%;" />
+<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_trick3.png" alt="gemm_trick3" style="zoom:67%;" />
 
 ### Trick 4 - Packing 
 
 Further optimizes memory access patterns by reorganizing data layout of both A and B for better cache utilization during computation.
 
-<img src="/Users/diac/Desktop/18847/gemm_trick4.png" alt="gemm_trick4" style="zoom:67%;" />
+<img src="https://raw.githubusercontent.com/diacccc/18847Project/main/images/gemm_trick4.png" alt="gemm_trick4" style="zoom:67%;" />

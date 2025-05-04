@@ -127,11 +127,11 @@ format-check:
 
 # Run the benchmark
 run-single: $(TARGET)
-	OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 ./$(TARGET) --output results.csv
+	LD_LIBRARY_PATH=$(MKL_PATH)/lib/intel64:$$LD_LIBRARY_PATH OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 MKL_NUM_THREADS=1 ./$(TARGET) --output results.csv
 
 # Run the benchmark
 run: $(TARGET)
-	OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output results.csv
+	LD_LIBRARY_PATH=$(MKL_PATH)/lib/intel64:$$LD_LIBRARY_PATH OMP_NUM_THREADS=8 VECLIB_MAXIMUM_THREADS=8 MKL_NUM_THREADS=8 $(OMP_ENV) ./$(TARGET) --output results.csv
 
 
 # Clean build artifacts
